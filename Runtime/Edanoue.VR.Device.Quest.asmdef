@@ -1,0 +1,17 @@
+{
+  "name": "Edanoue.VR.Device.Quest",
+  "rootNamespace": "",
+  "references": [
+    "GUID:339f973080c52e74189e8530b4624843",
+    "GUID:f64c9ebcd7899c3448a08dc9f9ddbe30"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
