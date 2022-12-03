@@ -3,10 +3,11 @@
 using System;
 using Edanoue.VR.Device.Core;
 using Edanoue.VR.Device.Quest.Internal;
+using UnityEngine;
 
 namespace Edanoue.VR.Device.Quest
 {
-    public abstract class QuestOvrControllerBase : IController, IUpdatable
+    public abstract class QuestOvrControllerBase : IController,IHasVelocity, IUpdatable
     {
         private readonly OVRInput.Controller _controller;
 
@@ -26,7 +27,7 @@ namespace Edanoue.VR.Device.Quest
         private bool _isTouchedStick;
         private Action? _lostConnectionDelegate;
 
-        private OVRPose _pose;
+        private OVRPlugin.PoseStatef _cachedPoseState;
 
         private Action<bool>? _pressedPrimaryDelegate;
         private Action<bool>? _pressedStickDelegate;
@@ -101,7 +102,7 @@ namespace Edanoue.VR.Device.Quest
         {
             get
             {
-                var p = _pose.position;
+                var p = _cachedPoseState.Pose.ToOVRPose().position;
                 return (p.x, p.y, p.z);
             }
         }
@@ -116,7 +117,7 @@ namespace Edanoue.VR.Device.Quest
         {
             get
             {
-                var o = _pose.orientation;
+                var o = _cachedPoseState.Pose.ToOVRPose().orientation;
                 return (o.w, o.x, o.y, o.z);
             }
         }
@@ -125,6 +126,42 @@ namespace Edanoue.VR.Device.Quest
         {
             add => _changedRotationDelegate += value;
             remove => _changedRotationDelegate -= value;
+        }
+        
+        (float X, float Y, float Z) IHasVelocity.LinearVelocity
+        {
+            get
+            {
+                var p = _cachedPoseState.Velocity.FromFlippedZVector3f();
+                return (p.x, p.y, p.z);
+            }
+        }
+        
+        (float X, float Y, float Z) IHasVelocity.LinearAcceleration
+        {
+            get
+            {
+                var p = _cachedPoseState.Acceleration.FromFlippedZVector3f();
+                return (p.x, p.y, p.z);
+            }
+        }
+        
+        (float X, float Y, float Z) IHasVelocity.AngularVelocity
+        {
+            get
+            {
+                var p = _cachedPoseState.AngularVelocity.FromFlippedZVector3f();
+                return (p.x, p.y, p.z);
+            }
+        }
+        
+        (float X, float Y, float Z) IHasVelocity.AngularAcceleration
+        {
+            get
+            {
+                var p = _cachedPoseState.AngularAcceleration.FromFlippedZVector3f();
+                return (p.x, p.y, p.z);
+            }
         }
 
         void IUpdatable.Update(float deltaTime)
@@ -149,18 +186,16 @@ namespace Edanoue.VR.Device.Quest
             }
 
             // --------------------------------------
-            // Cache pose (position and rotation)
+            // Cache PoseStatef for position, rotation and velocity.
             // Use OVRP method
             // Ref: OVRInput.GetLocalControllerPosition
             // --------------------------------------
-            _pose = _controllerDomain switch
+            _cachedPoseState = _controllerDomain switch
             {
                 // version >= OVRP_1_12_0
-                ControllerDomain.Left => OvrpApi.ovrp_GetNodePoseState(OVRPlugin.Step.Render, OVRPlugin.Node.HandLeft)
-                    .Pose.ToOVRPose(),
-                ControllerDomain.Right => OvrpApi.ovrp_GetNodePoseState(OVRPlugin.Step.Render, OVRPlugin.Node.HandRight)
-                    .Pose.ToOVRPose(),
-                _ => _pose
+                ControllerDomain.Left => OvrpApi.ovrp_GetNodePoseState(OVRPlugin.Step.Render, OVRPlugin.Node.HandLeft),
+                ControllerDomain.Right => OvrpApi.ovrp_GetNodePoseState(OVRPlugin.Step.Render, OVRPlugin.Node.HandRight),
+                _ => _cachedPoseState
             };
 
             // --------------------------------------
