@@ -3,33 +3,26 @@ using Edanoue.VR.Device.Core;
 
 namespace Edanoue.VR.Device.Quest
 {
+    /// <summary>
+    ///     Quest device provider class.
+    ///     Currently use OVR (OVRP) Plugin.
+    /// </summary>
     public class QuestProvider : IProvider
     {
         private readonly QuestOVRHeadset _headset;
+        private readonly QuestOvrControllerLeft _leftController;
+        private readonly QuestOvrControllerRight _rightController;
 
         public QuestProvider()
         {
+            // 南: OVR (OVRP) を利用した実装 のもので初期化しています
             _headset = new QuestOVRHeadset();
-            LeftController = new QuestOvrControllerLeft();
-            RightController = new QuestOvrControllerRight();
+            _leftController = new QuestOvrControllerLeft();
+            _rightController = new QuestOvrControllerRight();
         }
 
-        public QuestOvrControllerLeft LeftController { get; }
-        public QuestOvrControllerRight RightController { get; }
-
-
-        string IProvider.FamilyName => "Quest";
-        string IProvider.ProductName => "Quest";
-        string IProvider.Version => "0.1.0";
-
-        // IProvider impls
-
-        #region IProvider impls
-
         IHeadset IProvider.Headset => _headset;
-        IController IProvider.LeftController => LeftController;
-        IController IProvider.RightController => RightController;
-
-        #endregion
+        IController IProvider.LeftController => _leftController;
+        IController IProvider.RightController => _rightController;
     }
 }
