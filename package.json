@@ -1,17 +1,15 @@
 {
   "name": "com.edanoue.vr.device.quest",
   "displayName": "Edanoue VR Device Quest",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "unity": "2021.3",
   "description": "Edanoue Quest Device",
-  "keywords": [
-    "picoxr",
-    "xr",
-    "vr",
-    "virtual",
-    "xreditorsubsystem"
-  ],
   "dependencies": {
     "com.edanoue.vr.device.core": "0.1.0"
+  },
+  "author": {
+    "name": "Edanoue, Inc.",
+    "email": "contact@edanoue.com",
+    "url": "https://edanoue.com"
   }
 }
