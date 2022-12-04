@@ -12,5 +12,12 @@
     "name": "Edanoue, Inc.",
     "email": "contact@edanoue.com",
     "url": "https://edanoue.com"
-  }
+  },
+  "samples" :[
+    {
+      "displayName": "Basic Quest Input",
+      "description": "",
+      "path": "Samples~/Basic Quest Input"
+    }
+  ]
 }
