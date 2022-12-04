@@ -189,7 +189,7 @@ namespace Edanoue.VR.Device.Quest
             // Connection check
             // --------------------------------------
             var tmpBool = false;
-            tmpBool = OVRInput.IsControllerConnected(_ovrControllerMask);
+            tmpBool = OVRInput.GetControllerPositionTracked(_ovrControllerMask);
             if (tmpBool != _isConnected)
             {
                 _isConnected = tmpBool;
