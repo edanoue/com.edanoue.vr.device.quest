@@ -9,7 +9,7 @@ namespace Edanoue.VR.Device.Quest
     /// <summary>
     /// Oculus Quest Touch controller (OQ, OQ2 con)
     /// </summary>
-    public class OvrControllerQuestTouch : IController, ISupportedVelocity, ISupportedAcceleration, IVibration,
+    public class OvrControllerQuestTouch : IController, ISupportedVelocity, IVibration,
         IUpdatable
     {
         private readonly ControllerDomain _controllerDomain;
@@ -131,6 +131,8 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
+        // 南: MQ2 の Touch Controller は取得できないっぽいです
+        /*
         (float X, float Y, float Z) ISupportedAcceleration.LinearAcceleration
         {
             get
@@ -148,6 +150,7 @@ namespace Edanoue.VR.Device.Quest
                 return (p.x, p.y, p.z);
             }
         }
+        */
 
         (float X, float Y, float Z) ISupportedVelocity.LinearVelocity
         {
