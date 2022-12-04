@@ -3,17 +3,18 @@
 using System;
 using Edanoue.VR.Device.Core;
 using Edanoue.VR.Device.Quest.Internal;
-using UnityEngine;
 
 namespace Edanoue.VR.Device.Quest
 {
-    public abstract class QuestOvrControllerBase : IController,IHasVelocity, IUpdatable
+    /// <summary>
+    /// Oculus Quest Touch controller (OQ, OQ2 con)
+    /// </summary>
+    public class OvrControllerQuestTouch : IController, ISupportedVelocity, ISupportedAcceleration, IVibration,
+        IUpdatable
     {
-        private readonly OVRInput.Controller _controller;
-
         private readonly ControllerDomain _controllerDomain;
-        private Action<float, float, float>? _changedPositionDelegate;
-        private Action<float, float, float, float>? _changedRotationDelegate;
+
+        private OVRPlugin.PoseStatef _cachedPoseState;
         private Action<float, float>? _changedStickDelegate;
 
         private Action? _establishedConnectionDelegate;
@@ -25,9 +26,9 @@ namespace Edanoue.VR.Device.Quest
         private bool _isPressedStick;
         private bool _isTouchedPrimary;
         private bool _isTouchedStick;
-        private Action? _lostConnectionDelegate;
 
-        private OVRPlugin.PoseStatef _cachedPoseState;
+        private bool _isTouchedThumbRest;
+        private Action? _lostConnectionDelegate;
 
         private Action<bool>? _pressedPrimaryDelegate;
         private Action<bool>? _pressedStickDelegate;
@@ -37,10 +38,22 @@ namespace Edanoue.VR.Device.Quest
         private Action<bool>? _touchedPrimaryDelegate;
         private Action<bool>? _touchedStickDelegate;
 
-        internal QuestOvrControllerBase(OVRInput.Controller controller, ControllerDomain controllerDomain)
+        internal OvrControllerQuestTouch(ControllerDomain controllerDomain)
         {
-            _controller = controller;
             _controllerDomain = controllerDomain;
+        }
+
+        private OVRInput.Controller _ovrControllerMask
+        {
+            get
+            {
+                return _controllerDomain switch
+                {
+                    ControllerDomain.Left => OVRInput.Controller.LTouch,
+                    ControllerDomain.Right => OVRInput.Controller.RTouch,
+                    _ => OVRInput.Controller.None
+                };
+            }
         }
 
         ControllerDomain IController.Domain => _controllerDomain;
@@ -83,6 +96,8 @@ namespace Edanoue.VR.Device.Quest
             remove => _changedStickDelegate -= value;
         }
 
+        bool IController.IsTouchedThumbRest => _isTouchedThumbRest;
+
         bool ITracker.IsConnected => _isConnected;
 
 
@@ -107,12 +122,6 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
-        event Action<float, float, float>? ITracker.ChangedPosition
-        {
-            add => _changedPositionDelegate += value;
-            remove => _changedPositionDelegate -= value;
-        }
-
         (float W, float X, float Y, float Z) ITracker.Rotation
         {
             get
@@ -122,22 +131,7 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
-        event Action<float, float, float, float>? ITracker.ChangedRotation
-        {
-            add => _changedRotationDelegate += value;
-            remove => _changedRotationDelegate -= value;
-        }
-        
-        (float X, float Y, float Z) IHasVelocity.LinearVelocity
-        {
-            get
-            {
-                var p = _cachedPoseState.Velocity.FromFlippedZVector3f();
-                return (p.x, p.y, p.z);
-            }
-        }
-        
-        (float X, float Y, float Z) IHasVelocity.LinearAcceleration
+        (float X, float Y, float Z) ISupportedAcceleration.LinearAcceleration
         {
             get
             {
@@ -145,17 +139,8 @@ namespace Edanoue.VR.Device.Quest
                 return (p.x, p.y, p.z);
             }
         }
-        
-        (float X, float Y, float Z) IHasVelocity.AngularVelocity
-        {
-            get
-            {
-                var p = _cachedPoseState.AngularVelocity.FromFlippedZVector3f();
-                return (p.x, p.y, p.z);
-            }
-        }
-        
-        (float X, float Y, float Z) IHasVelocity.AngularAcceleration
+
+        (float X, float Y, float Z) ISupportedAcceleration.AngularAcceleration
         {
             get
             {
@@ -164,13 +149,47 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
+        (float X, float Y, float Z) ISupportedVelocity.LinearVelocity
+        {
+            get
+            {
+                var p = _cachedPoseState.Velocity.FromFlippedZVector3f();
+                return (p.x, p.y, p.z);
+            }
+        }
+
+        (float X, float Y, float Z) ISupportedVelocity.AngularVelocity
+        {
+            get
+            {
+                var p = _cachedPoseState.AngularVelocity.FromFlippedZVector3f();
+                return (p.x, p.y, p.z);
+            }
+        }
+
+        // 南: MQ2 の Touch Controller は取得できない (常に 0) っぽいです
+        // https://answers.unity.com/questions/1669595/get-oculus-riftrifts-controllers-battery-level.html
+        /*
+        float ISupport.Battery
+        {
+            get
+            {
+                // Range: [0, 100]
+                byte nativeRemain= OVRInput.GetControllerBatteryPercentRemaining(_ovrControllerMask);
+                // to [0.0, 1.0]
+                float a = nativeRemain;
+                return a / 100.0f;
+            }
+        }
+        */
+
         void IUpdatable.Update(float deltaTime)
         {
             // --------------------------------------
             // Connection check
             // --------------------------------------
             var tmpBool = false;
-            tmpBool = OVRInput.IsControllerConnected(_controller);
+            tmpBool = OVRInput.IsControllerConnected(_ovrControllerMask);
             if (tmpBool != _isConnected)
             {
                 _isConnected = tmpBool;
@@ -194,62 +213,52 @@ namespace Edanoue.VR.Device.Quest
             {
                 // version >= OVRP_1_12_0
                 ControllerDomain.Left => OvrpApi.ovrp_GetNodePoseState(OVRPlugin.Step.Render, OVRPlugin.Node.HandLeft),
-                ControllerDomain.Right => OvrpApi.ovrp_GetNodePoseState(OVRPlugin.Step.Render, OVRPlugin.Node.HandRight),
+                ControllerDomain.Right =>
+                    OvrpApi.ovrp_GetNodePoseState(OVRPlugin.Step.Render, OVRPlugin.Node.HandRight),
                 _ => _cachedPoseState
             };
 
             // --------------------------------------
             // Cache buttons
             // --------------------------------------
-            tmpBool = OVRInput.Get(OVRInput.Button.One, _controller);
+            tmpBool = OVRInput.Get(OVRInput.Button.One, _ovrControllerMask);
             if (_isPressedPrimary != tmpBool)
             {
                 _isPressedPrimary = tmpBool;
                 _pressedPrimaryDelegate?.Invoke(tmpBool);
             }
 
-            tmpBool = OVRInput.Get(OVRInput.Touch.One, _controller);
+            tmpBool = OVRInput.Get(OVRInput.Touch.One, _ovrControllerMask);
             if (_isTouchedPrimary != tmpBool)
             {
                 _isTouchedPrimary = tmpBool;
                 _touchedPrimaryDelegate?.Invoke(tmpBool);
             }
 
-            tmpBool = OVRInput.Get(OVRInput.Button.PrimaryThumbstick, _controller);
+            tmpBool = OVRInput.Get(OVRInput.Button.PrimaryThumbstick, _ovrControllerMask);
             if (_isPressedStick != tmpBool)
             {
                 _isPressedStick = tmpBool;
                 _pressedStickDelegate?.Invoke(tmpBool);
             }
 
-            tmpBool = OVRInput.Get(OVRInput.Touch.PrimaryThumbstick, _controller);
+            tmpBool = OVRInput.Get(OVRInput.Touch.PrimaryThumbstick, _ovrControllerMask);
             if (_isTouchedStick != tmpBool)
             {
                 _isTouchedStick = tmpBool;
                 _touchedStickDelegate?.Invoke(tmpBool);
             }
 
-            var tmpVec2 = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, _controller);
+            var tmpVec2 = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, _ovrControllerMask);
             if (_stickX != tmpVec2.x || _stickY != tmpVec2.y)
             {
                 _stickX = tmpVec2.x;
                 _stickY = tmpVec2.y;
                 _changedStickDelegate?.Invoke(_stickX, _stickY);
             }
-        }
-    }
 
-    public class QuestOvrControllerLeft : QuestOvrControllerBase
-    {
-        public QuestOvrControllerLeft() : base(OVRInput.Controller.LTouch, ControllerDomain.Left)
-        {
-        }
-    }
-
-    public class QuestOvrControllerRight : QuestOvrControllerBase
-    {
-        public QuestOvrControllerRight() : base(OVRInput.Controller.RTouch, ControllerDomain.Right)
-        {
+            tmpBool = OVRInput.Get(OVRInput.Touch.PrimaryThumbRest, _ovrControllerMask);
+            if (_isTouchedThumbRest != tmpBool) _isTouchedThumbRest = tmpBool;
         }
     }
 }

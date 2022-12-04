@@ -2,18 +2,23 @@
 using System;
 using Edanoue.VR.Device.Core;
 using Edanoue.VR.Device.Quest.Internal;
+using UnityEngine.Device;
 
 namespace Edanoue.VR.Device.Quest
 {
-    public class QuestOVRHeadset : IHeadset, IUpdatable
+    /// <summary>
+    ///     Meta Quest 2 の Headset の実装
+    /// </summary>
+    public class OvrHeadsetQuest2 : IHeadset, ISupportedBattery, IUpdatable
     {
-        private Action<float, float, float>? _changedPositionDelegate;
-        private Action<float, float, float, float>? _changedRotationDelegate;
-
         private Action? _establishedConnectionDelegate;
         private bool _isConnected;
+
+        private bool _isMounted;
         private Action? _lostConnectionDelegate;
+        private Action? _mountedDelegate;
         private OVRPose _pose;
+        private Action? _unmountedDelegate;
         bool ITracker.IsConnected => _isConnected;
 
         event Action? ITracker.EstablishedConnection
@@ -37,12 +42,6 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
-        event Action<float, float, float>? ITracker.ChangedPosition
-        {
-            add => _changedPositionDelegate += value;
-            remove => _changedPositionDelegate -= value;
-        }
-
         (float W, float X, float Y, float Z) ITracker.Rotation
         {
             get
@@ -52,11 +51,23 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
-        event Action<float, float, float, float>? ITracker.ChangedRotation
+        bool IHeadset.IsMounted => _isMounted;
+
+        event Action? IHeadset.Mounted
         {
-            add => _changedRotationDelegate += value;
-            remove => _changedRotationDelegate -= value;
+            add => _mountedDelegate += value;
+            remove => _mountedDelegate -= value;
         }
+
+        event Action? IHeadset.Unmounted
+        {
+            add => _unmountedDelegate += value;
+            remove => _unmountedDelegate -= value;
+        }
+
+        float ISupportedBattery.Battery =>
+            // Use Unity methods (range: [0, 1])
+            SystemInfo.batteryLevel;
 
         void IUpdatable.Update(float deltaTime)
         {
@@ -78,6 +89,17 @@ namespace Edanoue.VR.Device.Quest
                     _lostConnectionDelegate?.Invoke();
                     return;
                 }
+            }
+
+            // Headset mounted check
+            tmpBool = OVRPlugin.userPresent;
+            if (_isMounted != tmpBool)
+            {
+                _isMounted = tmpBool;
+                if (_isMounted)
+                    _mountedDelegate?.Invoke();
+                else
+                    _unmountedDelegate?.Invoke();
             }
 
             // --------------------------------------
