@@ -7,40 +7,31 @@ using Edanoue.VR.Device.Quest.Internal;
 namespace Edanoue.VR.Device.Quest
 {
     /// <summary>
-    /// Oculus Quest Touch controller (OQ, OQ2 con)
+    ///     Oculus Quest Touch controller (OQ, OQ2 con)
     /// </summary>
     public class OvrControllerQuestTouch : IController, ISupportedVelocity, IVibration,
         IUpdatable
     {
         private readonly ControllerDomain _controllerDomain;
-
+        private readonly ControllerInputData _controllerInputData;
         private OVRPlugin.PoseStatef _cachedPoseState;
         private Action<float, float>? _changedStickDelegate;
-
         private Action? _establishedConnectionDelegate;
-
 
         private bool _isConnected;
 
-        private bool _isPressedPrimary;
-        private bool _isPressedStick;
-        private bool _isTouchedPrimary;
-        private bool _isTouchedStick;
-
-        private bool _isTouchedThumbRest;
         private Action? _lostConnectionDelegate;
-
         private Action<bool>? _pressedPrimaryDelegate;
+        private Action<bool>? _pressedSecondaryDelegate;
         private Action<bool>? _pressedStickDelegate;
-        private float _stickX;
-        private float _stickY;
-
         private Action<bool>? _touchedPrimaryDelegate;
+        private Action<bool>? _touchedSecondaryDelegate;
         private Action<bool>? _touchedStickDelegate;
 
         internal OvrControllerQuestTouch(ControllerDomain controllerDomain)
         {
             _controllerDomain = controllerDomain;
+            _controllerInputData = new ControllerInputData();
         }
 
         private OVRInput.Controller _ovrControllerMask
@@ -57,8 +48,8 @@ namespace Edanoue.VR.Device.Quest
         }
 
         ControllerDomain IController.Domain => _controllerDomain;
-        bool IController.IsPressedPrimary => _isPressedPrimary;
-        bool IController.IsTouchedPrimary => _isTouchedPrimary;
+        bool IController.IsPressedPrimary => _controllerInputData.IsPressedPrimary;
+        bool IController.IsTouchedPrimary => _controllerInputData.IsTouchedPrimary;
 
         event Action<bool>? IController.PressedPrimary
         {
@@ -72,11 +63,25 @@ namespace Edanoue.VR.Device.Quest
             remove => _touchedPrimaryDelegate -= value;
         }
 
-        bool IController.IsPressedStick => _isPressedStick;
-        bool IController.IsTouchedStick => _isTouchedStick;
+        bool IController.IsPressedSecondary => _controllerInputData.IsPressedSecondary;
+        bool IController.IsTouchedSecondary => _controllerInputData.IsTouchedSecondary;
 
-        (float X, float Y) IController.Stick => (_stickX, _stickY);
+        event Action<bool>? IController.PressedSecondary
+        {
+            add => _pressedSecondaryDelegate += value;
+            remove => _pressedSecondaryDelegate -= value;
+        }
 
+        event Action<bool>? IController.TouchedSecondary
+        {
+            add => _touchedSecondaryDelegate += value;
+            remove => _touchedSecondaryDelegate -= value;
+        }
+
+        bool IController.IsPressedStick => _controllerInputData.IsPressedStick;
+        bool IController.IsTouchedStick => _controllerInputData.IsTouchedStick;
+
+        (float X, float Y) IController.Stick => _controllerInputData.Stick;
 
         event Action<bool>? IController.PressedStick
         {
@@ -96,7 +101,7 @@ namespace Edanoue.VR.Device.Quest
             remove => _changedStickDelegate -= value;
         }
 
-        bool IController.IsTouchedThumbRest => _isTouchedThumbRest;
+        bool IController.IsTouchedThumbRest => _controllerInputData.IsTouchedThumbRest;
 
         bool ITracker.IsConnected => _isConnected;
 
@@ -131,8 +136,8 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
-        // 南: MQ2 の Touch Controller は取得できないっぽいです
         /*
+        // 南: MQ2 の Touch Controller は取得できないっぽいです
         (float X, float Y, float Z) ISupportedAcceleration.LinearAcceleration
         {
             get
@@ -170,9 +175,9 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
+        /*
         // 南: MQ2 の Touch Controller は取得できない (常に 0) っぽいです
         // https://answers.unity.com/questions/1669595/get-oculus-riftrifts-controllers-battery-level.html
-        /*
         float ISupport.Battery
         {
             get
@@ -225,43 +230,76 @@ namespace Edanoue.VR.Device.Quest
             // Cache buttons
             // --------------------------------------
             tmpBool = OVRInput.Get(OVRInput.Button.One, _ovrControllerMask);
-            if (_isPressedPrimary != tmpBool)
+            if (_controllerInputData.IsPressedPrimary != tmpBool)
             {
-                _isPressedPrimary = tmpBool;
+                _controllerInputData.IsPressedPrimary = tmpBool;
                 _pressedPrimaryDelegate?.Invoke(tmpBool);
             }
 
             tmpBool = OVRInput.Get(OVRInput.Touch.One, _ovrControllerMask);
-            if (_isTouchedPrimary != tmpBool)
+            if (_controllerInputData.IsTouchedPrimary != tmpBool)
             {
-                _isTouchedPrimary = tmpBool;
+                _controllerInputData.IsTouchedPrimary = tmpBool;
                 _touchedPrimaryDelegate?.Invoke(tmpBool);
             }
 
-            tmpBool = OVRInput.Get(OVRInput.Button.PrimaryThumbstick, _ovrControllerMask);
-            if (_isPressedStick != tmpBool)
+            tmpBool = OVRInput.Get(OVRInput.Button.Two, _ovrControllerMask);
+            if (_controllerInputData.IsPressedSecondary != tmpBool)
             {
-                _isPressedStick = tmpBool;
+                _controllerInputData.IsPressedSecondary = tmpBool;
+                _pressedSecondaryDelegate?.Invoke(tmpBool);
+            }
+
+            tmpBool = OVRInput.Get(OVRInput.Touch.Two, _ovrControllerMask);
+            if (_controllerInputData.IsTouchedSecondary != tmpBool)
+            {
+                _controllerInputData.IsTouchedSecondary = tmpBool;
+                _touchedSecondaryDelegate?.Invoke(tmpBool);
+            }
+
+            tmpBool = OVRInput.Get(OVRInput.Button.PrimaryThumbstick, _ovrControllerMask);
+            if (_controllerInputData.IsPressedStick != tmpBool)
+            {
+                _controllerInputData.IsPressedStick = tmpBool;
                 _pressedStickDelegate?.Invoke(tmpBool);
             }
 
             tmpBool = OVRInput.Get(OVRInput.Touch.PrimaryThumbstick, _ovrControllerMask);
-            if (_isTouchedStick != tmpBool)
+            if (_controllerInputData.IsTouchedStick != tmpBool)
             {
-                _isTouchedStick = tmpBool;
+                _controllerInputData.IsTouchedStick = tmpBool;
                 _touchedStickDelegate?.Invoke(tmpBool);
             }
 
             var tmpVec2 = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, _ovrControllerMask);
-            if (_stickX != tmpVec2.x || _stickY != tmpVec2.y)
+            if (_controllerInputData.StickX != tmpVec2.x || _controllerInputData.StickY != tmpVec2.y)
             {
-                _stickX = tmpVec2.x;
-                _stickY = tmpVec2.y;
-                _changedStickDelegate?.Invoke(_stickX, _stickY);
+                _controllerInputData.StickX = tmpVec2.x;
+                _controllerInputData.StickY = tmpVec2.y;
+                _changedStickDelegate?.Invoke(_controllerInputData.StickX, _controllerInputData.StickY);
             }
 
             tmpBool = OVRInput.Get(OVRInput.Touch.PrimaryThumbRest, _ovrControllerMask);
-            if (_isTouchedThumbRest != tmpBool) _isTouchedThumbRest = tmpBool;
+            if (_controllerInputData.IsTouchedThumbRest != tmpBool) _controllerInputData.IsTouchedThumbRest = tmpBool;
+        }
+
+        private class ControllerInputData
+        {
+            public float Grip;
+            public bool IsPressedPrimary;
+            public bool IsPressedSecondary;
+            public bool IsPressedStick;
+            public bool IsTouchedGrip;
+            public bool IsTouchedPrimary;
+            public bool IsTouchedSecondary;
+            public bool IsTouchedStick;
+            public bool IsTouchedThumbRest;
+            public bool IsTouchedTrigger;
+            public float StickX;
+            public float StickY;
+            public float Trigger;
+
+            internal (float X, float Y) Stick => (StickX, StickY);
         }
     }
 }
