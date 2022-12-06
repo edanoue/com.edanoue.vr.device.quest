@@ -69,5 +69,13 @@ namespace Edanoue.VR.Device.Quest
         IHeadset IProvider.Headset => _headset;
         IController IProvider.LeftController => _leftController;
         IController IProvider.RightController => _rightController;
+        
+        float[] IProvider.AvailableRefreshRates => OVRManager.display.displayFrequenciesAvailable;
+
+        float IProvider.RefreshRate
+        {
+            get => OVRPlugin.systemDisplayFrequency;
+            set => OVRPlugin.systemDisplayFrequency = value;
+        }
     }
 }
