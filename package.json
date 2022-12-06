@@ -1,11 +1,11 @@
 {
   "name": "com.edanoue.vr.device.quest",
   "displayName": "Edanoue VR Device Quest",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "unity": "2021.3",
   "description": "Meta vr device",
   "dependencies": {
-    "com.edanoue.vr.device.core": "0.1.1",
+    "com.edanoue.vr.device.core": "0.1.2",
     "com.meta.xr.sdk.utilities": "46.0.0-preview"
   },
   "author": {
@@ -13,7 +13,7 @@
     "email": "contact@edanoue.com",
     "url": "https://edanoue.com"
   },
-  "samples" :[
+  "samples": [
     {
       "displayName": "Basic Quest Input",
       "description": "",
