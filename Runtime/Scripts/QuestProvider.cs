@@ -27,7 +27,7 @@ namespace Edanoue.VR.Device.Quest
 
             // OVRP の関数から現在接続されている Headset を取得
             var headsetType = OVRPlugin.GetSystemHeadsetType();
-            
+
             // None の場合
             // OVR が利用可能な Headset が見つからなかった場合
             // 南: 特にまだ決めていませんが めちゃくちゃエラーなのでここで止めます
@@ -69,7 +69,7 @@ namespace Edanoue.VR.Device.Quest
         IHeadset IProvider.Headset => _headset;
         IController IProvider.LeftController => _leftController;
         IController IProvider.RightController => _rightController;
-        
+
         float[] IProvider.AvailableRefreshRates => OVRManager.display.displayFrequenciesAvailable;
 
         float IProvider.RefreshRate
