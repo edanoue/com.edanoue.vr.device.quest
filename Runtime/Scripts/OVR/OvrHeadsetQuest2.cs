@@ -1,4 +1,6 @@
-﻿#nullable enable
+﻿// Copyright Edanoue, Inc. All Rights Reserved.
+
+#nullable enable
 using System;
 using Edanoue.VR.Device.Core;
 using Edanoue.VR.Device.Quest.Internal;
@@ -81,9 +83,7 @@ namespace Edanoue.VR.Device.Quest
             {
                 _isConnected = tmpBool;
                 if (_isConnected)
-                {
                     _establishedConnectionDelegate?.Invoke();
-                }
                 else
                 {
                     _lostConnectionDelegate?.Invoke();

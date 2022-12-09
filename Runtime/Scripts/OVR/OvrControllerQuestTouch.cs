@@ -1,4 +1,6 @@
-﻿#nullable enable
+﻿// Copyright Edanoue, Inc. All Rights Reserved.
+
+#nullable enable
 
 using System;
 using Edanoue.VR.Device.Core;
@@ -15,7 +17,7 @@ namespace Edanoue.VR.Device.Quest
         private const float InputTolerance = 0.0001f;
         private readonly ControllerDomain _controllerDomain;
         private readonly ControllerInputData _inputCache;
-        private OVRPlugin.PoseStatef _cachedPoseState;
+        protected OVRPlugin.PoseStatef _cachedPoseState;
         private Action? _establishedConnectionDelegate;
 
         private bool _isConnected;
@@ -28,7 +30,7 @@ namespace Edanoue.VR.Device.Quest
             _inputCache = new ControllerInputData();
         }
 
-        private OVRInput.Controller _ovrControllerMask
+        protected OVRInput.Controller _ovrControllerMask
         {
             get
             {
@@ -236,9 +238,7 @@ namespace Edanoue.VR.Device.Quest
             {
                 _isConnected = tmpBool;
                 if (_isConnected)
-                {
                     _establishedConnectionDelegate?.Invoke();
-                }
                 else
                 {
                     _lostConnectionDelegate?.Invoke();
