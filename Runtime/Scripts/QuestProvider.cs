@@ -1,4 +1,6 @@
-﻿#nullable enable
+﻿// Copyright Edanoue, Inc. All Rights Reserved.
+
+#nullable enable
 using System;
 using Edanoue.VR.Device.Core;
 using UnityEngine;
