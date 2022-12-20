@@ -1,4 +1,6 @@
-﻿#nullable enable
+﻿// Copyright Edanoue, Inc. All Rights Reserved.
+
+#nullable enable
 namespace Edanoue.VR.Device.Quest
 {
     internal enum HeadsetType
