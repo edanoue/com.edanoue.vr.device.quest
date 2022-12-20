@@ -13,7 +13,7 @@ namespace Edanoue.VR.Device.Quest
     /// </summary>
     public class QuestProvider : IProvider
     {
-        private readonly OvrHeadsetQuest2 _headset;
+        private readonly OvrHeadsetQuest2        _headset;
         private readonly OvrControllerQuestTouch _leftController;
         private readonly OvrControllerQuestTouch _rightController;
 

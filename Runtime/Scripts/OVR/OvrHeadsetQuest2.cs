@@ -14,9 +14,9 @@ namespace Edanoue.VR.Device.Quest
     public class OvrHeadsetQuest2 : IHeadset, ISupportedBattery, IUpdatable
     {
         private Action? _establishedConnectionDelegate;
-        private bool _isConnected;
+        private bool    _isConnected;
 
-        private bool _isMounted;
+        private bool    _isMounted;
         private Action? _lostConnectionDelegate;
         private Action? _mountedDelegate;
         private OVRPose _pose;
@@ -83,7 +83,9 @@ namespace Edanoue.VR.Device.Quest
             {
                 _isConnected = tmpBool;
                 if (_isConnected)
+                {
                     _establishedConnectionDelegate?.Invoke();
+                }
                 else
                 {
                     _lostConnectionDelegate?.Invoke();
@@ -97,9 +99,13 @@ namespace Edanoue.VR.Device.Quest
             {
                 _isMounted = tmpBool;
                 if (_isMounted)
+                {
                     _mountedDelegate?.Invoke();
+                }
                 else
+                {
                     _unmountedDelegate?.Invoke();
+                }
             }
 
             // --------------------------------------
