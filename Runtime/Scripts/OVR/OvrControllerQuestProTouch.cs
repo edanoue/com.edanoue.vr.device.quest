@@ -8,11 +8,29 @@ namespace Edanoue.VR.Device.Quest
 {
     /// <summary>
     ///     Meta Quest Touch Pro controller
+    ///     Touch Controller に追加で 対応している機能
+    ///     - Trigger Button の振動 (ISupportedTriggerVibration)
+    ///     - Thumb Rest の振動 (ISupportedThumbRestVibration)
     /// </summary>
-    public class OvrControllerQuestProTouch : OvrControllerQuestTouch
+    public class OvrControllerQuestProTouch :
+        OvrControllerQuestTouch,
+        ISupportedThumbRestVibration,
+        ISupportedTriggerVibration
     {
         internal OvrControllerQuestProTouch(ControllerDomain controllerDomain) : base(controllerDomain)
         {
+        }
+
+        void ISupportedThumbRestVibration.SetVibration(float frequency, float amplitude)
+        {
+            const OVRInput.HapticsLocation location = OVRInput.HapticsLocation.Thumb;
+            OVRInput.SetControllerLocalizedVibration(location, frequency, amplitude, _ovrControllerMask);
+        }
+
+        void ISupportedTriggerVibration.SetVibration(float frequency, float amplitude)
+        {
+            const OVRInput.HapticsLocation location = OVRInput.HapticsLocation.Index;
+            OVRInput.SetControllerLocalizedVibration(location, frequency, amplitude, _ovrControllerMask);
         }
 
         /*

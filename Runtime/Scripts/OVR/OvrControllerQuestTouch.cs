@@ -11,14 +11,17 @@ namespace Edanoue.VR.Device.Quest
     /// <summary>
     ///     Oculus Quest Touch controller (OQ, OQ2 con)
     /// </summary>
-    public class OvrControllerQuestTouch : IController, ISupportedVelocity, IVibration,
+    public class OvrControllerQuestTouch :
+        IController,
+        ISupportedVelocity,
+        ISupportedBodyVibration,
         IUpdatable
     {
-        private const float InputTolerance = 0.0001f;
-        private readonly ControllerDomain _controllerDomain;
-        private readonly ControllerInputData _inputCache;
-        protected OVRPlugin.PoseStatef _cachedPoseState;
-        private Action? _establishedConnectionDelegate;
+        private const    float                InputTolerance = 0.0001f;
+        private readonly ControllerDomain     _controllerDomain;
+        private readonly ControllerInputData  _inputCache;
+        protected        OVRPlugin.PoseStatef _cachedPoseState;
+        private          Action?              _establishedConnectionDelegate;
 
         private bool _isConnected;
 
@@ -173,6 +176,27 @@ namespace Edanoue.VR.Device.Quest
         }
 
         /*
+        // 南: MQ2 の Touch Controller は取得できない (常に 0) っぽいです
+        // https://answers.unity.com/questions/1669595/get-oculus-riftrifts-controllers-battery-level.html
+        float ISupport.Battery
+        {
+            get
+            {
+                // Range: [0, 100]
+                byte nativeRemain= OVRInput.GetControllerBatteryPercentRemaining(_ovrControllerMask);
+                // to [0.0, 1.0]
+                float a = nativeRemain;
+                return a / 100.0f;
+            }
+        }
+        */
+        void ISupportedBodyVibration.SetVibration(float frequency, float amplitude)
+        {
+            const OVRInput.HapticsLocation location = OVRInput.HapticsLocation.Hand;
+            OVRInput.SetControllerLocalizedVibration(location, frequency, amplitude, _ovrControllerMask);
+        }
+
+        /*
         // 南: MQ2 の Touch Controller は取得できないっぽいです
         (float X, float Y, float Z) ISupportedAcceleration.LinearAcceleration
         {
@@ -211,22 +235,6 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
-        /*
-        // 南: MQ2 の Touch Controller は取得できない (常に 0) っぽいです
-        // https://answers.unity.com/questions/1669595/get-oculus-riftrifts-controllers-battery-level.html
-        float ISupport.Battery
-        {
-            get
-            {
-                // Range: [0, 100]
-                byte nativeRemain= OVRInput.GetControllerBatteryPercentRemaining(_ovrControllerMask);
-                // to [0.0, 1.0]
-                float a = nativeRemain;
-                return a / 100.0f;
-            }
-        }
-        */
-
         void IUpdatable.Update(float deltaTime)
         {
             // --------------------------------------
@@ -238,7 +246,9 @@ namespace Edanoue.VR.Device.Quest
             {
                 _isConnected = tmpBool;
                 if (_isConnected)
+                {
                     _establishedConnectionDelegate?.Invoke();
+                }
                 else
                 {
                     _lostConnectionDelegate?.Invoke();
@@ -300,26 +310,27 @@ namespace Edanoue.VR.Device.Quest
             _inputCache.IsTouchedThumbRest = OVRInput.Get(OVRInput.Touch.PrimaryThumbRest, _ovrControllerMask);
         }
 
+
         /// <summary>
         /// </summary>
         private class ControllerInputData
         {
-            private float _grip;
-            private bool _isPressedPrimary;
-            private bool _isPressedSecondary;
-            private bool _isPressedStick;
-            private bool _isTouchedGrip;
-            private bool _isTouchedPrimary;
-            private bool _isTouchedSecondary;
-            private bool _isTouchedStick;
-            private bool _isTouchedThumbRest;
-            private bool _isTouchedTrigger;
-            private float _stickX;
-            private float _stickY;
-            private float _trigger;
-            internal Action<float>? ChangedGrip;
+            private  float                 _grip;
+            private  bool                  _isPressedPrimary;
+            private  bool                  _isPressedSecondary;
+            private  bool                  _isPressedStick;
+            private  bool                  _isTouchedGrip;
+            private  bool                  _isTouchedPrimary;
+            private  bool                  _isTouchedSecondary;
+            private  bool                  _isTouchedStick;
+            private  bool                  _isTouchedThumbRest;
+            private  bool                  _isTouchedTrigger;
+            private  float                 _stickX;
+            private  float                 _stickY;
+            private  float                 _trigger;
+            internal Action<float>?        ChangedGrip;
             internal Action<float, float>? ChangedStick;
-            internal Action<float>? ChangedTrigger;
+            internal Action<float>?        ChangedTrigger;
 
             internal Action<bool>? PressedPrimary;
             internal Action<bool>? PressedSecondary;
@@ -401,7 +412,11 @@ namespace Edanoue.VR.Device.Quest
                 get => _trigger;
                 set
                 {
-                    if (!(Math.Abs(value - _trigger) > InputTolerance)) return;
+                    if (!(Math.Abs(value - _trigger) > InputTolerance))
+                    {
+                        return;
+                    }
+
                     _trigger = value;
                     ChangedTrigger?.Invoke(value);
                 }
@@ -425,7 +440,11 @@ namespace Edanoue.VR.Device.Quest
                 get => _grip;
                 set
                 {
-                    if (!(Math.Abs(value - _grip) > InputTolerance)) return;
+                    if (!(Math.Abs(value - _grip) > InputTolerance))
+                    {
+                        return;
+                    }
+
                     _grip = value;
                     ChangedGrip?.Invoke(value);
                 }
