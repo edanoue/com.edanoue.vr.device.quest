@@ -13,10 +13,10 @@ namespace Edanoue.VR.Device.Quest
     /// </summary>
     public class OvrHeadsetQuest2 : IHeadset, ISupportedBattery, IUpdatable
     {
+        private Action? _applicationFocusAcquiredDelegate;
+        private Action? _applicationFocusLostDelegate;
         private Action? _establishedConnectionDelegate;
-        private bool    _hasInputFocus;
-        private Action? _inputFocusAcquiredDelegate;
-        private Action? _inputFocusLostDelegate;
+        private bool    _hasApplicationFocus;
         private bool    _isConnected;
 
         private bool    _isMounted;
@@ -71,18 +71,18 @@ namespace Edanoue.VR.Device.Quest
             remove => _unmountedDelegate -= value;
         }
 
-        bool IHeadset.HasInputFocus => _hasInputFocus;
+        bool IHeadset.HasApplicationFocus => _hasApplicationFocus;
 
-        event Action? IHeadset.InputFocusAcquired
+        event Action? IHeadset.ApplicationFocusAcquired
         {
-            add => _inputFocusAcquiredDelegate += value;
-            remove => _inputFocusAcquiredDelegate -= value;
+            add => _applicationFocusAcquiredDelegate += value;
+            remove => _applicationFocusAcquiredDelegate -= value;
         }
 
-        event Action? IHeadset.InputFocusLost
+        event Action? IHeadset.ApplicationFocusLost
         {
-            add => _inputFocusLostDelegate += value;
-            remove => _inputFocusLostDelegate -= value;
+            add => _applicationFocusLostDelegate += value;
+            remove => _applicationFocusLostDelegate -= value;
         }
 
         float ISupportedBattery.Battery =>
@@ -113,16 +113,16 @@ namespace Edanoue.VR.Device.Quest
 
             // Headset focus check
             tmpBool = OVRPlugin.hasInputFocus;
-            if (_hasInputFocus != tmpBool)
+            if (_hasApplicationFocus != tmpBool)
             {
-                _hasInputFocus = tmpBool;
-                if (_hasInputFocus)
+                _hasApplicationFocus = tmpBool;
+                if (_hasApplicationFocus)
                 {
-                    _inputFocusAcquiredDelegate?.Invoke();
+                    _applicationFocusAcquiredDelegate?.Invoke();
                 }
                 else
                 {
-                    _inputFocusLostDelegate?.Invoke();
+                    _applicationFocusLostDelegate?.Invoke();
                 }
             }
 
