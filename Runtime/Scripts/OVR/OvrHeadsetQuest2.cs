@@ -14,6 +14,9 @@ namespace Edanoue.VR.Device.Quest
     public class OvrHeadsetQuest2 : IHeadset, ISupportedBattery, IUpdatable
     {
         private Action? _establishedConnectionDelegate;
+        private bool    _hasInputFocus;
+        private Action? _inputFocusAcquiredDelegate;
+        private Action? _inputFocusLostDelegate;
         private bool    _isConnected;
 
         private bool    _isMounted;
@@ -21,6 +24,7 @@ namespace Edanoue.VR.Device.Quest
         private Action? _mountedDelegate;
         private OVRPose _pose;
         private Action? _unmountedDelegate;
+
         bool ITracker.IsConnected => _isConnected;
 
         event Action? ITracker.EstablishedConnection
@@ -67,6 +71,20 @@ namespace Edanoue.VR.Device.Quest
             remove => _unmountedDelegate -= value;
         }
 
+        bool IHeadset.HasInputFocus => _hasInputFocus;
+
+        event Action? IHeadset.InputFocusAcquired
+        {
+            add => _inputFocusAcquiredDelegate += value;
+            remove => _inputFocusAcquiredDelegate -= value;
+        }
+
+        event Action? IHeadset.InputFocusLost
+        {
+            add => _inputFocusLostDelegate += value;
+            remove => _inputFocusLostDelegate -= value;
+        }
+
         float ISupportedBattery.Battery =>
             // Use Unity methods (range: [0, 1])
             SystemInfo.batteryLevel;
@@ -90,6 +108,21 @@ namespace Edanoue.VR.Device.Quest
                 {
                     _lostConnectionDelegate?.Invoke();
                     return;
+                }
+            }
+
+            // Headset focus check
+            tmpBool = OVRPlugin.hasInputFocus;
+            if (_hasInputFocus != tmpBool)
+            {
+                _hasInputFocus = tmpBool;
+                if (_hasInputFocus)
+                {
+                    _inputFocusAcquiredDelegate?.Invoke();
+                }
+                else
+                {
+                    _inputFocusLostDelegate?.Invoke();
                 }
             }
 
