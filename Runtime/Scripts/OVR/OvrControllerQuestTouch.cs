@@ -142,6 +142,18 @@ namespace Edanoue.VR.Device.Quest
             remove => _inputCache.TouchedThumbRest -= value;
         }
 
+        /// <summary>
+        ///     Home の設定で左右を入れ替えていても常に左手側の方の Start が反応します (2022-12 時点)
+        ///     右手の方は System に予約されているので取得できません
+        /// </summary>
+        bool IController.IsPressedStart => _inputCache.IsPressedStart;
+
+        event Action<bool> IController.PressedStart
+        {
+            add => _inputCache.PressedStart += value;
+            remove => _inputCache.PressedStart -= value;
+        }
+
         bool ITracker.IsConnected => _isConnected;
 
 
@@ -308,6 +320,9 @@ namespace Edanoue.VR.Device.Quest
 
             // thumb rest touched
             _inputCache.IsTouchedThumbRest = OVRInput.Get(OVRInput.Touch.PrimaryThumbRest, _ovrControllerMask);
+
+            // start button touched
+            _inputCache.IsPressedStart = OVRInput.Get(OVRInput.Button.Start, _ovrControllerMask);
         }
 
 
@@ -318,6 +333,7 @@ namespace Edanoue.VR.Device.Quest
             private  float                 _grip;
             private  bool                  _isPressedPrimary;
             private  bool                  _isPressedSecondary;
+            private  bool                  _isPressedStart;
             private  bool                  _isPressedStick;
             private  bool                  _isTouchedGrip;
             private  bool                  _isTouchedPrimary;
@@ -334,6 +350,7 @@ namespace Edanoue.VR.Device.Quest
 
             internal Action<bool>? PressedPrimary;
             internal Action<bool>? PressedSecondary;
+            internal Action<bool>? PressedStart;
             internal Action<bool>? PressedStick;
             internal Action<bool>? TouchedGrip;
             internal Action<bool>? TouchedPrimary;
@@ -499,6 +516,19 @@ namespace Edanoue.VR.Device.Quest
                     {
                         _isTouchedThumbRest = value;
                         TouchedThumbRest?.Invoke(value);
+                    }
+                }
+            }
+
+            internal bool IsPressedStart
+            {
+                get => _isPressedStart;
+                set
+                {
+                    if (value ^ _isPressedStart)
+                    {
+                        _isPressedStart = value;
+                        PressedStart?.Invoke(value);
                     }
                 }
             }
