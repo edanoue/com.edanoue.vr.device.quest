@@ -13,11 +13,9 @@ namespace Edanoue.VR.Device.Quest
     /// </summary>
     public class OvrHeadsetQuest2 : IHeadset, ISupportedBattery, IUpdatable
     {
-        private Action? _applicationFocusAcquiredDelegate;
-        private Action? _applicationFocusLostDelegate;
         private Action? _establishedConnectionDelegate;
-        private bool    _hasApplicationFocus;
-        private bool    _isConnected;
+
+        private bool _isConnected;
 
         private bool    _isMounted;
         private Action? _lostConnectionDelegate;
@@ -71,19 +69,6 @@ namespace Edanoue.VR.Device.Quest
             remove => _unmountedDelegate -= value;
         }
 
-        bool IHeadset.HasApplicationFocus => _hasApplicationFocus;
-
-        event Action? IHeadset.ApplicationFocusAcquired
-        {
-            add => _applicationFocusAcquiredDelegate += value;
-            remove => _applicationFocusAcquiredDelegate -= value;
-        }
-
-        event Action? IHeadset.ApplicationFocusLost
-        {
-            add => _applicationFocusLostDelegate += value;
-            remove => _applicationFocusLostDelegate -= value;
-        }
 
         float ISupportedBattery.Battery =>
             // Use Unity methods (range: [0, 1])
@@ -108,21 +93,6 @@ namespace Edanoue.VR.Device.Quest
                 {
                     _lostConnectionDelegate?.Invoke();
                     return;
-                }
-            }
-
-            // Headset focus check
-            tmpBool = OVRPlugin.hasInputFocus;
-            if (_hasApplicationFocus != tmpBool)
-            {
-                _hasApplicationFocus = tmpBool;
-                if (_hasApplicationFocus)
-                {
-                    _applicationFocusAcquiredDelegate?.Invoke();
-                }
-                else
-                {
-                    _applicationFocusLostDelegate?.Invoke();
                 }
             }
 

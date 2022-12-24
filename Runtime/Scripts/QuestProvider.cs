@@ -11,11 +11,15 @@ namespace Edanoue.VR.Device.Quest
     ///     Quest device provider class.
     ///     Currently use OVR (OVRP) Plugin.
     /// </summary>
-    public class QuestProvider : IProvider
+    public class QuestProvider : IProvider, IUpdatable
     {
         private readonly OvrHeadsetQuest2        _headset;
         private readonly OvrControllerQuestTouch _leftController;
         private readonly OvrControllerQuestTouch _rightController;
+
+        private Action? _applicationFocusAcquiredDelegate;
+        private Action? _applicationFocusLostDelegate;
+        private bool    _hasApplicationFocus;
 
         public QuestProvider()
         {
@@ -72,6 +76,38 @@ namespace Edanoue.VR.Device.Quest
         {
             get => OVRPlugin.systemDisplayFrequency;
             set => OVRPlugin.systemDisplayFrequency = value;
+        }
+
+        bool IProvider.HasApplicationFocus => _hasApplicationFocus;
+
+        event Action? IProvider.ApplicationFocusAcquired
+        {
+            add => _applicationFocusAcquiredDelegate += value;
+            remove => _applicationFocusAcquiredDelegate -= value;
+        }
+
+        event Action? IProvider.ApplicationFocusLost
+        {
+            add => _applicationFocusLostDelegate += value;
+            remove => _applicationFocusLostDelegate -= value;
+        }
+
+        void IUpdatable.Update(float deltaTime)
+        {
+            // Headset focus check
+            var tmpBool = OVRPlugin.hasInputFocus;
+            if (_hasApplicationFocus != tmpBool)
+            {
+                _hasApplicationFocus = tmpBool;
+                if (_hasApplicationFocus)
+                {
+                    _applicationFocusAcquiredDelegate?.Invoke();
+                }
+                else
+                {
+                    _applicationFocusLostDelegate?.Invoke();
+                }
+            }
         }
 
         /// <summary>
