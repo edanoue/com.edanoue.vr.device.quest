@@ -38,8 +38,7 @@ namespace Edanoue.VR.Device.Quest
     public class OvrControllerQuestTouch :
         IController,
         ISupportedVelocity,
-        ISupportedBodyVibration,
-        IUpdatable
+        ISupportedBodyVibration
     {
         private const float _INPUT_TOLERANCE = 0.0001f;
 
@@ -274,7 +273,7 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
-        void IUpdatable.Update(float deltaTime)
+        internal void Update()
         {
             // --------------------------------------
             // Connection check

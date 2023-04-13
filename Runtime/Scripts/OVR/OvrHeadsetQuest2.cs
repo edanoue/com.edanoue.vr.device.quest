@@ -11,7 +11,7 @@ namespace Edanoue.VR.Device.Quest
     /// <summary>
     /// Meta Quest 2 の Headset の実装
     /// </summary>
-    public class OvrHeadsetQuest2 : IHeadset, ISupportedBattery, IUpdatable
+    public class OvrHeadsetQuest2 : IHeadset, ISupportedBattery
     {
         private Action? _establishedConnectionDelegate;
 
@@ -74,7 +74,7 @@ namespace Edanoue.VR.Device.Quest
             // Use Unity methods (range: [0, 1])
             SystemInfo.batteryLevel;
 
-        void IUpdatable.Update(float deltaTime)
+        internal void Update()
         {
             var tmpBool = false;
 
@@ -119,7 +119,7 @@ namespace Edanoue.VR.Device.Quest
             // --------------------------------------
             if (OVRManager.loadedXRDevice == OVRManager.XRDevice.Oculus)
             {
-                var ovrNodeId = OVRPlugin.Node.EyeCenter;
+                const OVRPlugin.Node ovrNodeId = OVRPlugin.Node.EyeCenter;
                 // version >= OVRP_1_12_0
                 _pose = OvrpApi.ovrp_GetNodePoseState(OVRPlugin.Step.Render, ovrNodeId).Pose.ToOVRPose();
             }
