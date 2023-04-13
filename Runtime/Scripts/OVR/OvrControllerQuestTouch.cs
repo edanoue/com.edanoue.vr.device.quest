@@ -9,6 +9,29 @@ using Edanoue.VR.Device.Quest.Internal;
 
 namespace Edanoue.VR.Device.Quest
 {
+    internal sealed class OvrTouchController
+    {
+        private readonly uint                       _controllerMask;
+        public           OVRPlugin.ControllerState5 StateRef;
+
+        public OvrTouchController(ControllerDomain domain)
+        {
+            if (domain == ControllerDomain.Left)
+            {
+                _controllerMask = (uint)OVRPlugin.Controller.LTouch;
+            }
+            else
+            {
+                _controllerMask = (uint)OVRPlugin.Controller.RTouch;
+            }
+        }
+
+        public void Update()
+        {
+            OvrpApi.ovrp_GetControllerState5(_controllerMask, ref StateRef);
+        }
+    }
+
     /// <summary>
     /// Oculus Quest Touch controller (OQ, OQ2 con)
     /// </summary>
@@ -18,7 +41,9 @@ namespace Edanoue.VR.Device.Quest
         ISupportedBodyVibration,
         IUpdatable
     {
-        private const    float                InputTolerance = 0.0001f;
+        private const float _INPUT_TOLERANCE = 0.0001f;
+
+        private readonly OvrTouchController   _controller;
         private readonly ControllerDomain     _controllerDomain;
         private readonly ControllerInputData  _inputCache;
         protected        OVRPlugin.PoseStatef _cachedPoseState;
@@ -32,6 +57,7 @@ namespace Edanoue.VR.Device.Quest
         {
             _controllerDomain = controllerDomain;
             _inputCache = new ControllerInputData();
+            _controller = new OvrTouchController(controllerDomain);
         }
 
         protected OVRInput.Controller _ovrControllerMask
@@ -271,7 +297,7 @@ namespace Edanoue.VR.Device.Quest
 
             // --------------------------------------
             // Cache PoseStatef for position, rotation and velocity.
-            // Use OVRP method
+            // Use OVRP native api method
             // Ref: OVRInput.GetLocalControllerPosition
             // --------------------------------------
             _cachedPoseState = _controllerDomain switch
@@ -284,47 +310,102 @@ namespace Edanoue.VR.Device.Quest
             };
 
             // --------------------------------------
-            // Cache buttons
+            // Cache buttons state
+            // Use OVRP native api method
             // --------------------------------------
+            _controller.Update();
+            ref var state = ref _controller.StateRef;
+            ref var rawButtons = ref state.Buttons;
 
-            // primary (A or X) pressed
-            _inputCache.IsPressedPrimary = OVRInput.Get(OVRInput.Button.One, _ovrControllerMask);
+            if (_controllerDomain == ControllerDomain.Left)
+            {
+                // primary (A or X) pressed
+                _inputCache.IsPressedPrimary = (rawButtons & (uint)OVRInput.RawButton.X) != 0;
 
-            // primary (A or X) touched
-            _inputCache.IsTouchedPrimary = OVRInput.Get(OVRInput.Touch.One, _ovrControllerMask);
+                // secondary button (B or Y) pressed
+                _inputCache.IsPressedSecondary = (rawButtons & (uint)OVRInput.RawButton.Y) != 0;
 
-            // secondary button (B or Y) pressed
-            _inputCache.IsPressedSecondary = OVRInput.Get(OVRInput.Button.Two, _ovrControllerMask);
+                // thumbstick pressed
+                _inputCache.IsPressedStick = (rawButtons & (uint)OVRInput.RawButton.LThumbstick) != 0;
 
-            // secondary button (B or Y) touched
-            _inputCache.IsTouchedSecondary = OVRInput.Get(OVRInput.Touch.Two, _ovrControllerMask);
+                // start button touched
+                _inputCache.IsPressedStart = (rawButtons & (uint)OVRInput.RawButton.Start) != 0;
+            }
+            else
+            {
+                // primary (A or X) pressed
+                _inputCache.IsPressedPrimary = (rawButtons & (uint)OVRInput.RawButton.A) != 0;
 
-            // trigger touched
-            _inputCache.IsTouchedTrigger = OVRInput.Get(OVRInput.Touch.PrimaryIndexTrigger, _ovrControllerMask);
+                // secondary button (B or Y) pressed
+                _inputCache.IsPressedSecondary = (rawButtons & (uint)OVRInput.RawButton.B) != 0;
 
-            // trigger value
-            _inputCache.Trigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, _ovrControllerMask);
+                // thumbstick pressed
+                _inputCache.IsPressedStick = (rawButtons & (uint)OVRInput.RawButton.RThumbstick) != 0;
 
-            // Note: Oculus Quest Touch controller can't detect grip touch
+                // start button touched
+                _inputCache.IsPressedStart = (rawButtons & (uint)OVRInput.RawButton.Start) != 0;
+            }
 
-            // grip value
-            _inputCache.Grip = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, _ovrControllerMask);
+            ref var rawTouches = ref state.Touches;
+            if (_controllerDomain == ControllerDomain.Left)
+            {
+                // primary (A or X) touched
+                _inputCache.IsTouchedPrimary = (rawTouches & (uint)OVRInput.RawTouch.X) != 0;
 
-            // thumbstick pressed
-            _inputCache.IsPressedStick = OVRInput.Get(OVRInput.Button.PrimaryThumbstick, _ovrControllerMask);
+                // secondary button (B or Y) touched
+                _inputCache.IsTouchedSecondary = (rawTouches & (uint)OVRInput.RawTouch.Y) != 0;
 
-            // thumbstick touched
-            _inputCache.IsTouchedStick = OVRInput.Get(OVRInput.Touch.PrimaryThumbstick, _ovrControllerMask);
+                // trigger touched
+                _inputCache.IsTouchedTrigger = (rawTouches & (uint)OVRInput.RawTouch.LIndexTrigger) != 0;
 
-            // thumbstick 2D value
-            var tmpVec2 = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, _ovrControllerMask);
-            _inputCache.Stick = (tmpVec2.x, tmpVec2.y);
+                // thumbstick touched
+                _inputCache.IsTouchedStick = (rawTouches & (uint)OVRInput.RawTouch.LThumbstick) != 0;
 
-            // thumb rest touched
-            _inputCache.IsTouchedThumbRest = OVRInput.Get(OVRInput.Touch.PrimaryThumbRest, _ovrControllerMask);
+                // thumb rest touched
+                _inputCache.IsTouchedThumbRest = (rawTouches & (uint)OVRInput.RawTouch.LThumbRest) != 0;
+            }
+            else
+            {
+                // primary (A or X) touched
+                _inputCache.IsTouchedPrimary = (rawTouches & (uint)OVRInput.RawTouch.A) != 0;
 
-            // start button touched
-            _inputCache.IsPressedStart = OVRInput.Get(OVRInput.Button.Start, _ovrControllerMask);
+                // secondary button (B or Y) touched
+                _inputCache.IsTouchedSecondary = (rawTouches & (uint)OVRInput.RawTouch.B) != 0;
+
+                // trigger touched
+                _inputCache.IsTouchedTrigger = (rawTouches & (uint)OVRInput.RawTouch.RIndexTrigger) != 0;
+
+                // thumbstick touched
+                _inputCache.IsTouchedStick = (rawTouches & (uint)OVRInput.RawTouch.RThumbstick) != 0;
+
+                // thumb rest touched
+                _inputCache.IsTouchedThumbRest = (rawTouches & (uint)OVRInput.RawTouch.RThumbRest) != 0;
+            }
+
+            if (_controllerDomain == ControllerDomain.Left)
+            {
+                // trigger value
+                _inputCache.Trigger = state.LIndexTrigger;
+
+                // grip value
+                _inputCache.Grip = state.LHandTrigger;
+
+                // thumbstick 2D value
+                var tmpVec2 = state.LThumbstick;
+                _inputCache.Stick = (tmpVec2.x, tmpVec2.y);
+            }
+            else
+            {
+                // trigger value
+                _inputCache.Trigger = state.RIndexTrigger;
+
+                // grip value
+                _inputCache.Grip = state.RHandTrigger;
+
+                // thumbstick 2D value
+                var tmpVec2 = state.RThumbstick;
+                _inputCache.Stick = (tmpVec2.x, tmpVec2.y);
+            }
         }
 
         /// <summary>
@@ -442,7 +523,7 @@ namespace Edanoue.VR.Device.Quest
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
-                    if (!(Math.Abs(value - _trigger) > InputTolerance))
+                    if (!(Math.Abs(value - _trigger) > _INPUT_TOLERANCE))
                     {
                         return;
                     }
@@ -474,7 +555,7 @@ namespace Edanoue.VR.Device.Quest
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
-                    if (!(Math.Abs(value - _grip) > InputTolerance))
+                    if (!(Math.Abs(value - _grip) > _INPUT_TOLERANCE))
                     {
                         return;
                     }
@@ -521,7 +602,8 @@ namespace Edanoue.VR.Device.Quest
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
-                    if (Math.Abs(value.X - _stickX) > InputTolerance || Math.Abs(value.Y - _stickY) > InputTolerance)
+                    if (Math.Abs(value.X - _stickX) > _INPUT_TOLERANCE ||
+                        Math.Abs(value.Y - _stickY) > _INPUT_TOLERANCE)
                     {
                         _stickX = value.X;
                         _stickY = value.Y;
