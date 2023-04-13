@@ -8,8 +8,8 @@ using UnityEngine;
 namespace Edanoue.VR.Device.Quest
 {
     /// <summary>
-    ///     Quest device provider class.
-    ///     Currently use OVR (OVRP) Plugin.
+    /// Quest device provider class.
+    /// Currently use OVR (OVRP) Plugin.
     /// </summary>
     public class QuestProvider : IProvider, IUpdatable
     {
@@ -111,11 +111,11 @@ namespace Edanoue.VR.Device.Quest
         }
 
         /// <summary>
-        ///     Meta Quest 2 を使用している場合のコントローラーのセットアップ
-        ///     Note: 2022-11 現在 Meta Quest 2 は以下のコントローラーに対応しています
-        ///     - Oculus Quest Touch Controller
-        ///     - Meta Quest Pro Touch Controller
-        ///     Note: 2022-11 現在 InteractionProfile は Standalone じゃないと取得できません
+        /// Meta Quest 2 を使用している場合のコントローラーのセットアップ
+        /// Note: 2022-11 現在 Meta Quest 2 は以下のコントローラーに対応しています
+        /// - Oculus Quest Touch Controller
+        /// - Meta Quest Pro Touch Controller
+        /// Note: 2022-11 現在 InteractionProfile は Standalone じゃないと取得できません
         /// </summary>
         /// <exception cref="NotImplementedException"></exception>
         private static void SetupQuest2Controller(out OvrControllerQuestTouch leftController,

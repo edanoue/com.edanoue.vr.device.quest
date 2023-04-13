@@ -9,7 +9,7 @@ using UnityEngine.Device;
 namespace Edanoue.VR.Device.Quest
 {
     /// <summary>
-    ///     Meta Quest 2 の Headset の実装
+    /// Meta Quest 2 の Headset の実装
     /// </summary>
     public class OvrHeadsetQuest2 : IHeadset, ISupportedBattery, IUpdatable
     {

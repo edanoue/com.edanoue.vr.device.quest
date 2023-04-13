@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace Edanoue.VR.Device.Quest.Internal
 {
     /// <summary>
-    ///     OVRP (OVRPlugin) C# API class
+    /// OVRP (OVRPlugin) C# API class
     /// </summary>
     internal static class OvrpApi
     {
