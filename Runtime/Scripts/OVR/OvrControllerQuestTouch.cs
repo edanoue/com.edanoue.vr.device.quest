@@ -6,6 +6,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Edanoue.VR.Device.Core;
 using Edanoue.VR.Device.Quest.Internal;
+using UnityEngine;
 
 namespace Edanoue.VR.Device.Quest
 {
@@ -40,7 +41,8 @@ namespace Edanoue.VR.Device.Quest
         ISupportedVelocity,
         ISupportedBodyVibration
     {
-        private const float _INPUT_TOLERANCE = 0.0001f;
+        private const float _INPUT_TOLERANCE          = 0.0001f;
+        private const float _AXIS_DEAD_ZONE_THRESHOLD = 0.2f;
 
         private readonly OvrTouchController   _controller;
         private readonly ControllerDomain     _controllerDomain;
@@ -384,27 +386,100 @@ namespace Edanoue.VR.Device.Quest
             if (_controllerDomain == ControllerDomain.Left)
             {
                 // trigger value
-                _inputCache.Trigger = state.LIndexTrigger;
+                {
+                    var axis = CalculateDeadZone(state.LIndexTrigger, _AXIS_DEAD_ZONE_THRESHOLD);
+                    _inputCache.Trigger = CalculateAbsMax(0f, axis);
+                    // Debug.Log($"Trigger:{_inputCache.Trigger}");
+                }
 
                 // grip value
-                _inputCache.Grip = state.LHandTrigger;
+                {
+                    var axis = CalculateDeadZone(state.LHandTrigger, _AXIS_DEAD_ZONE_THRESHOLD);
+                    _inputCache.Grip = CalculateAbsMax(0f, axis);
+                }
 
                 // thumbstick 2D value
-                var tmpVec2 = state.LThumbstick;
-                _inputCache.Stick = (tmpVec2.x, tmpVec2.y);
+                {
+                    var tmpVec2 = state.LThumbstick;
+                    var axis = new Vector2(tmpVec2.x, tmpVec2.y);
+                    axis = CalculateDeadZone(axis, _AXIS_DEAD_ZONE_THRESHOLD);
+                    axis = CalculateAbsMax(Vector2.zero, axis);
+                    _inputCache.Stick = (axis.x, axis.y);
+                }
             }
             else
             {
                 // trigger value
-                _inputCache.Trigger = state.RIndexTrigger;
+                {
+                    var axis = CalculateDeadZone(state.RIndexTrigger, _AXIS_DEAD_ZONE_THRESHOLD);
+                    _inputCache.Trigger = CalculateAbsMax(0f, axis);
+                }
 
                 // grip value
-                _inputCache.Grip = state.RHandTrigger;
+                {
+                    var axis = CalculateDeadZone(state.RHandTrigger, _AXIS_DEAD_ZONE_THRESHOLD);
+                    _inputCache.Grip = CalculateAbsMax(0f, axis);
+                }
 
                 // thumbstick 2D value
-                var tmpVec2 = state.RThumbstick;
-                _inputCache.Stick = (tmpVec2.x, tmpVec2.y);
+                {
+                    var tmpVec2 = state.RThumbstick;
+                    var axis = new Vector2(tmpVec2.x, tmpVec2.y);
+                    axis = CalculateDeadZone(axis, _AXIS_DEAD_ZONE_THRESHOLD);
+                    axis = CalculateAbsMax(Vector2.zero, axis);
+                    _inputCache.Stick = (axis.x, axis.y);
+                }
             }
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float CalculateDeadZone(float a, float deadZone)
+        {
+            var mag = a >= 0 ? a : -a;
+
+            if (mag <= deadZone)
+            {
+                return 0.0f;
+            }
+
+            a *= (mag - deadZone) / (1.0f - deadZone);
+
+            if (a * a > 1.0f)
+            {
+                return a >= 0 ? 1.0f : -1.0f;
+            }
+
+            return a;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector2 CalculateDeadZone(Vector2 a, float deadZone)
+        {
+            if (a.sqrMagnitude <= deadZone * deadZone)
+            {
+                return Vector2.zero;
+            }
+
+            a *= (a.magnitude - deadZone) / (1.0f - deadZone);
+
+            return a.sqrMagnitude > 1.0f ? a.normalized : a;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float CalculateAbsMax(float a, float b)
+        {
+            var absA = a >= 0 ? a : -a;
+            var absB = b >= 0 ? b : -b;
+            return absA >= absB ? a : b;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector2 CalculateAbsMax(Vector2 a, Vector2 b)
+        {
+            var absA = a.sqrMagnitude;
+            var absB = b.sqrMagnitude;
+            return absA >= absB ? a : b;
         }
 
         /// <summary>
@@ -522,7 +597,7 @@ namespace Edanoue.VR.Device.Quest
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
-                    if (!(Math.Abs(value - _trigger) > _INPUT_TOLERANCE))
+                    if (Math.Abs(value - _trigger) < _INPUT_TOLERANCE)
                     {
                         return;
                     }
