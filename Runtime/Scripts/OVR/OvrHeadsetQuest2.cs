@@ -8,6 +8,29 @@ using UnityEngine.Device;
 
 namespace Edanoue.VR.Device.Quest
 {
+    internal sealed class QuestHeadsetDisplayColorHandler : HeadsetDisplayColorHandler
+    {
+        public override void SetColorScale(float x, float y, float z, float w)
+        {
+            OculusXRPlugin.SetColorScale(x, y, z, w);
+        }
+
+        public override void SetColorOffset(float x, float y, float z, float w)
+        {
+            OculusXRPlugin.SetColorOffset(x, y, z, w);
+        }
+
+        public override void ResetColorScale()
+        {
+            OculusXRPlugin.SetColorScale(1, 1, 1, 1);
+        }
+
+        public override void ResetColorOffset()
+        {
+            OculusXRPlugin.SetColorOffset(0, 0, 0, 0);
+        }
+    }
+
     /// <summary>
     /// Meta Quest 2 の Headset の実装
     /// </summary>
@@ -69,6 +92,7 @@ namespace Edanoue.VR.Device.Quest
             remove => _unmountedDelegate -= value;
         }
 
+        public HeadsetDisplayColorHandler DisplayColor { get; } = new QuestHeadsetDisplayColorHandler();
 
         float ISupportedBattery.Battery =>
             // Use Unity methods (range: [0, 1])
