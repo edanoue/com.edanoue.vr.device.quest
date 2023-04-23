@@ -232,8 +232,24 @@ namespace Edanoue.VR.Device.Quest
         */
         void ISupportedBodyVibration.SetVibration(float frequency, float amplitude)
         {
-            const OVRInput.HapticsLocation location = OVRInput.HapticsLocation.Hand;
-            OVRInput.SetControllerLocalizedVibration(location, frequency, amplitude, _ovrControllerMask);
+            if (_controllerDomain == ControllerDomain.Left)
+            {
+                OvrpApi.ovrp_SetControllerLocalizedVibration(
+                    OVRPlugin.Controller.LTouch,
+                    OVRPlugin.HapticsLocation.Hand,
+                    frequency,
+                    amplitude
+                );
+            }
+            else
+            {
+                OvrpApi.ovrp_SetControllerLocalizedVibration(
+                    OVRPlugin.Controller.RTouch,
+                    OVRPlugin.HapticsLocation.Hand,
+                    frequency,
+                    amplitude
+                );
+            }
         }
 
         /*

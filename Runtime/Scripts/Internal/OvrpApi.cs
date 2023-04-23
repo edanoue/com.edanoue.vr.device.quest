@@ -12,13 +12,22 @@ namespace Edanoue.VR.Device.Quest.Internal
     {
         private const string _PLUGIN_NAME = "OVRPlugin";
 
+        #region OVRP 1.29.0
+
         /// <summary>
         /// </summary>
         /// <param name="stepId"></param>
         /// <param name="nodeId"></param>
         /// <returns></returns>
         [DllImport(_PLUGIN_NAME, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern OVRPlugin.PoseStatef ovrp_GetNodePoseState(OVRPlugin.Step stepId, OVRPlugin.Node nodeId);
+        internal static extern OVRPlugin.PoseStatef ovrp_GetNodePoseState(
+            OVRPlugin.Step stepId,
+            OVRPlugin.Node nodeId
+        );
+
+        #endregion
+
+        #region OVRP 1.78.0
 
         /// <summary>
         /// </summary>
@@ -26,7 +35,19 @@ namespace Edanoue.VR.Device.Quest.Internal
         /// <param name="controllerState"></param>
         /// <returns></returns>
         [DllImport(_PLUGIN_NAME, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern OVRPlugin.Result ovrp_GetControllerState5(uint controllerMask,
-            ref OVRPlugin.ControllerState5 controllerState);
+        internal static extern OVRPlugin.Result ovrp_GetControllerState5(
+            uint controllerMask,
+            ref OVRPlugin.ControllerState5 controllerState
+        );
+
+        [DllImport(_PLUGIN_NAME, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern OVRPlugin.Result ovrp_SetControllerLocalizedVibration(
+            OVRPlugin.Controller controllerMask,
+            OVRPlugin.HapticsLocation hapticsLocationMask,
+            float frequency,
+            float amplitude
+        );
+
+        #endregion
     }
 }
