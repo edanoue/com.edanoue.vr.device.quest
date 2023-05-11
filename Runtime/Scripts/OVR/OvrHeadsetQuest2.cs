@@ -80,6 +80,16 @@ namespace Edanoue.VR.Device.Quest
 
         bool IHeadset.IsMounted => _isMounted;
 
+        FoveatedRenderingLevel IHeadset.FoveatedRenderingLevel
+        {
+            get
+            {
+                OvrpApi.ovrp_GetTiledMultiResLevel(out var level);
+                return (FoveatedRenderingLevel)level;
+            }
+            set => OvrpApi.ovrp_SetTiledMultiResLevel((OVRPlugin.FoveatedRenderingLevel)value);
+        }
+
         event Action? IHeadset.Mounted
         {
             add => _mountedDelegate += value;

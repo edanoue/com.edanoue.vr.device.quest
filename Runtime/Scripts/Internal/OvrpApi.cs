@@ -27,6 +27,25 @@ namespace Edanoue.VR.Device.Quest.Internal
 
         #endregion
 
+        #region OVRP 1.21.0
+
+        /// <summary>
+        /// </summary>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        [DllImport(_PLUGIN_NAME, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern OVRPlugin.Result ovrp_GetTiledMultiResLevel(out OVRPlugin.FoveatedRenderingLevel level);
+
+        /// <summary>
+        /// タイルベース (Fixed) な Forveated Rendering を設定する
+        /// </summary>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        [DllImport(_PLUGIN_NAME, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern OVRPlugin.Result ovrp_SetTiledMultiResLevel(OVRPlugin.FoveatedRenderingLevel level);
+
+        #endregion
+
         #region OVRP 1.78.0
 
         /// <summary>
