@@ -7,10 +7,10 @@ using Edanoue.VR.Device.Core;
 namespace Edanoue.VR.Device.Quest
 {
     /// <summary>
-    ///     Meta Quest Touch Pro controller
-    ///     Touch Controller に追加で 対応している機能
-    ///     - Trigger Button の振動 (ISupportedTriggerVibration)
-    ///     - Thumb Rest の振動 (ISupportedThumbRestVibration)
+    /// Meta Quest Touch Pro controller
+    /// Touch Controller に追加で 対応している機能
+    /// - Trigger Button の振動 (ISupportedTriggerVibration)
+    /// - Thumb Rest の振動 (ISupportedThumbRestVibration)
     /// </summary>
     public class OvrControllerQuestProTouch :
         OvrControllerQuestTouch,

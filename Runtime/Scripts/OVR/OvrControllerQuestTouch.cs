@@ -3,21 +3,48 @@
 #nullable enable
 
 using System;
+using System.Runtime.CompilerServices;
 using Edanoue.VR.Device.Core;
 using Edanoue.VR.Device.Quest.Internal;
+using UnityEngine;
 
 namespace Edanoue.VR.Device.Quest
 {
+    internal sealed class OvrTouchController
+    {
+        private readonly uint                       _controllerMask;
+        public           OVRPlugin.ControllerState5 StateRef;
+
+        public OvrTouchController(ControllerDomain domain)
+        {
+            if (domain == ControllerDomain.Left)
+            {
+                _controllerMask = (uint)OVRPlugin.Controller.LTouch;
+            }
+            else
+            {
+                _controllerMask = (uint)OVRPlugin.Controller.RTouch;
+            }
+        }
+
+        public void Update()
+        {
+            OvrpApi.ovrp_GetControllerState5(_controllerMask, ref StateRef);
+        }
+    }
+
     /// <summary>
-    ///     Oculus Quest Touch controller (OQ, OQ2 con)
+    /// Oculus Quest Touch controller (OQ, OQ2 con)
     /// </summary>
     public class OvrControllerQuestTouch :
         IController,
         ISupportedVelocity,
-        ISupportedBodyVibration,
-        IUpdatable
+        ISupportedBodyVibration
     {
-        private const    float                InputTolerance = 0.0001f;
+        private const float _INPUT_TOLERANCE          = 0.0001f;
+        private const float _AXIS_DEAD_ZONE_THRESHOLD = 0.2f;
+
+        private readonly OvrTouchController   _controller;
         private readonly ControllerDomain     _controllerDomain;
         private readonly ControllerInputData  _inputCache;
         protected        OVRPlugin.PoseStatef _cachedPoseState;
@@ -31,6 +58,7 @@ namespace Edanoue.VR.Device.Quest
         {
             _controllerDomain = controllerDomain;
             _inputCache = new ControllerInputData();
+            _controller = new OvrTouchController(controllerDomain);
         }
 
         protected OVRInput.Controller _ovrControllerMask
@@ -93,7 +121,7 @@ namespace Edanoue.VR.Device.Quest
         }
 
         /// <summary>
-        ///     Quest Touch Controller always return false.
+        /// Quest Touch Controller always return false.
         /// </summary>
         bool IController.IsTouchedGrip => _inputCache.IsTouchedGrip;
 
@@ -143,8 +171,8 @@ namespace Edanoue.VR.Device.Quest
         }
 
         /// <summary>
-        ///     Home の設定で左右を入れ替えていても常に左手側の方の Start が反応します (2022-12 時点)
-        ///     右手の方は System に予約されているので取得できません
+        /// Home の設定で左右を入れ替えていても常に左手側の方の Start が反応します (2022-12 時点)
+        /// 右手の方は System に予約されているので取得できません
         /// </summary>
         bool IController.IsPressedStart => _inputCache.IsPressedStart;
 
@@ -204,8 +232,24 @@ namespace Edanoue.VR.Device.Quest
         */
         void ISupportedBodyVibration.SetVibration(float frequency, float amplitude)
         {
-            const OVRInput.HapticsLocation location = OVRInput.HapticsLocation.Hand;
-            OVRInput.SetControllerLocalizedVibration(location, frequency, amplitude, _ovrControllerMask);
+            if (_controllerDomain == ControllerDomain.Left)
+            {
+                OvrpApi.ovrp_SetControllerLocalizedVibration(
+                    OVRPlugin.Controller.LTouch,
+                    OVRPlugin.HapticsLocation.Hand,
+                    frequency,
+                    amplitude
+                );
+            }
+            else
+            {
+                OvrpApi.ovrp_SetControllerLocalizedVibration(
+                    OVRPlugin.Controller.RTouch,
+                    OVRPlugin.HapticsLocation.Hand,
+                    frequency,
+                    amplitude
+                );
+            }
         }
 
         /*
@@ -247,7 +291,7 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
-        void IUpdatable.Update(float deltaTime)
+        internal void Update()
         {
             // --------------------------------------
             // Connection check
@@ -270,7 +314,7 @@ namespace Edanoue.VR.Device.Quest
 
             // --------------------------------------
             // Cache PoseStatef for position, rotation and velocity.
-            // Use OVRP method
+            // Use OVRP native api method
             // Ref: OVRInput.GetLocalControllerPosition
             // --------------------------------------
             _cachedPoseState = _controllerDomain switch
@@ -283,52 +327,180 @@ namespace Edanoue.VR.Device.Quest
             };
 
             // --------------------------------------
-            // Cache buttons
+            // Cache buttons state
+            // Use OVRP native api method
             // --------------------------------------
-            // primary (A or X) pressed
-            _inputCache.IsPressedPrimary = OVRInput.Get(OVRInput.Button.One, _ovrControllerMask);
+            _controller.Update();
+            ref var state = ref _controller.StateRef;
+            ref var rawButtons = ref state.Buttons;
 
-            // primary (A or X) touched
-            _inputCache.IsTouchedPrimary = OVRInput.Get(OVRInput.Touch.One, _ovrControllerMask);
+            if (_controllerDomain == ControllerDomain.Left)
+            {
+                // primary (A or X) pressed
+                _inputCache.IsPressedPrimary = (rawButtons & (uint)OVRInput.RawButton.X) != 0;
 
-            // secondary button (B or Y) pressed
-            _inputCache.IsPressedSecondary = OVRInput.Get(OVRInput.Button.Two, _ovrControllerMask);
+                // secondary button (B or Y) pressed
+                _inputCache.IsPressedSecondary = (rawButtons & (uint)OVRInput.RawButton.Y) != 0;
 
-            // secondary button (B or Y) touched
-            _inputCache.IsTouchedSecondary = OVRInput.Get(OVRInput.Touch.Two, _ovrControllerMask);
+                // thumbstick pressed
+                _inputCache.IsPressedStick = (rawButtons & (uint)OVRInput.RawButton.LThumbstick) != 0;
 
-            // trigger touched
-            _inputCache.IsTouchedTrigger = OVRInput.Get(OVRInput.Touch.PrimaryIndexTrigger, _ovrControllerMask);
+                // start button touched
+                _inputCache.IsPressedStart = (rawButtons & (uint)OVRInput.RawButton.Start) != 0;
+            }
+            else
+            {
+                // primary (A or X) pressed
+                _inputCache.IsPressedPrimary = (rawButtons & (uint)OVRInput.RawButton.A) != 0;
 
-            // trigger value
-            _inputCache.Trigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, _ovrControllerMask);
+                // secondary button (B or Y) pressed
+                _inputCache.IsPressedSecondary = (rawButtons & (uint)OVRInput.RawButton.B) != 0;
 
-            // Note: Oculus Quest Touch controller can't detect grip touch
+                // thumbstick pressed
+                _inputCache.IsPressedStick = (rawButtons & (uint)OVRInput.RawButton.RThumbstick) != 0;
 
-            // grip value
-            _inputCache.Grip = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, _ovrControllerMask);
+                // start button touched
+                _inputCache.IsPressedStart = (rawButtons & (uint)OVRInput.RawButton.Start) != 0;
+            }
 
-            // thumbstick pressed
-            _inputCache.IsPressedStick = OVRInput.Get(OVRInput.Button.PrimaryThumbstick, _ovrControllerMask);
+            ref var rawTouches = ref state.Touches;
+            if (_controllerDomain == ControllerDomain.Left)
+            {
+                // primary (A or X) touched
+                _inputCache.IsTouchedPrimary = (rawTouches & (uint)OVRInput.RawTouch.X) != 0;
 
-            // thumbstick touched
-            _inputCache.IsTouchedStick = OVRInput.Get(OVRInput.Touch.PrimaryThumbstick, _ovrControllerMask);
+                // secondary button (B or Y) touched
+                _inputCache.IsTouchedSecondary = (rawTouches & (uint)OVRInput.RawTouch.Y) != 0;
 
-            // thumbstick 2D value
-            var tmpVec2 = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, _ovrControllerMask);
-            _inputCache.Stick = (tmpVec2.x, tmpVec2.y);
+                // trigger touched
+                _inputCache.IsTouchedTrigger = (rawTouches & (uint)OVRInput.RawTouch.LIndexTrigger) != 0;
 
-            // thumb rest touched
-            _inputCache.IsTouchedThumbRest = OVRInput.Get(OVRInput.Touch.PrimaryThumbRest, _ovrControllerMask);
+                // thumbstick touched
+                _inputCache.IsTouchedStick = (rawTouches & (uint)OVRInput.RawTouch.LThumbstick) != 0;
 
-            // start button touched
-            _inputCache.IsPressedStart = OVRInput.Get(OVRInput.Button.Start, _ovrControllerMask);
+                // thumb rest touched
+                _inputCache.IsTouchedThumbRest = (rawTouches & (uint)OVRInput.RawTouch.LThumbRest) != 0;
+            }
+            else
+            {
+                // primary (A or X) touched
+                _inputCache.IsTouchedPrimary = (rawTouches & (uint)OVRInput.RawTouch.A) != 0;
+
+                // secondary button (B or Y) touched
+                _inputCache.IsTouchedSecondary = (rawTouches & (uint)OVRInput.RawTouch.B) != 0;
+
+                // trigger touched
+                _inputCache.IsTouchedTrigger = (rawTouches & (uint)OVRInput.RawTouch.RIndexTrigger) != 0;
+
+                // thumbstick touched
+                _inputCache.IsTouchedStick = (rawTouches & (uint)OVRInput.RawTouch.RThumbstick) != 0;
+
+                // thumb rest touched
+                _inputCache.IsTouchedThumbRest = (rawTouches & (uint)OVRInput.RawTouch.RThumbRest) != 0;
+            }
+
+            if (_controllerDomain == ControllerDomain.Left)
+            {
+                // trigger value
+                {
+                    var axis = CalculateDeadZone(state.LIndexTrigger, _AXIS_DEAD_ZONE_THRESHOLD);
+                    _inputCache.Trigger = CalculateAbsMax(0f, axis);
+                    // Debug.Log($"Trigger:{_inputCache.Trigger}");
+                }
+
+                // grip value
+                {
+                    var axis = CalculateDeadZone(state.LHandTrigger, _AXIS_DEAD_ZONE_THRESHOLD);
+                    _inputCache.Grip = CalculateAbsMax(0f, axis);
+                }
+
+                // thumbstick 2D value
+                {
+                    var tmpVec2 = state.LThumbstick;
+                    var axis = new Vector2(tmpVec2.x, tmpVec2.y);
+                    axis = CalculateDeadZone(axis, _AXIS_DEAD_ZONE_THRESHOLD);
+                    axis = CalculateAbsMax(Vector2.zero, axis);
+                    _inputCache.Stick = (axis.x, axis.y);
+                }
+            }
+            else
+            {
+                // trigger value
+                {
+                    var axis = CalculateDeadZone(state.RIndexTrigger, _AXIS_DEAD_ZONE_THRESHOLD);
+                    _inputCache.Trigger = CalculateAbsMax(0f, axis);
+                }
+
+                // grip value
+                {
+                    var axis = CalculateDeadZone(state.RHandTrigger, _AXIS_DEAD_ZONE_THRESHOLD);
+                    _inputCache.Grip = CalculateAbsMax(0f, axis);
+                }
+
+                // thumbstick 2D value
+                {
+                    var tmpVec2 = state.RThumbstick;
+                    var axis = new Vector2(tmpVec2.x, tmpVec2.y);
+                    axis = CalculateDeadZone(axis, _AXIS_DEAD_ZONE_THRESHOLD);
+                    axis = CalculateAbsMax(Vector2.zero, axis);
+                    _inputCache.Stick = (axis.x, axis.y);
+                }
+            }
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float CalculateDeadZone(float a, float deadZone)
+        {
+            var mag = a >= 0 ? a : -a;
+
+            if (mag <= deadZone)
+            {
+                return 0.0f;
+            }
+
+            a *= (mag - deadZone) / (1.0f - deadZone);
+
+            if (a * a > 1.0f)
+            {
+                return a >= 0 ? 1.0f : -1.0f;
+            }
+
+            return a;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector2 CalculateDeadZone(Vector2 a, float deadZone)
+        {
+            if (a.sqrMagnitude <= deadZone * deadZone)
+            {
+                return Vector2.zero;
+            }
+
+            a *= (a.magnitude - deadZone) / (1.0f - deadZone);
+
+            return a.sqrMagnitude > 1.0f ? a.normalized : a;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float CalculateAbsMax(float a, float b)
+        {
+            var absA = a >= 0 ? a : -a;
+            var absB = b >= 0 ? b : -b;
+            return absA >= absB ? a : b;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector2 CalculateAbsMax(Vector2 a, Vector2 b)
+        {
+            var absA = a.sqrMagnitude;
+            var absB = b.sqrMagnitude;
+            return absA >= absB ? a : b;
+        }
+
         /// <summary>
         /// </summary>
-        private class ControllerInputData
+        private sealed class ControllerInputData
         {
             private  float                 _grip;
             private  bool                  _isPressedPrimary;
@@ -361,7 +533,9 @@ namespace Edanoue.VR.Device.Quest
 
             internal bool IsPressedPrimary
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _isPressedPrimary;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
                     if (value ^ _isPressedPrimary)
@@ -374,7 +548,9 @@ namespace Edanoue.VR.Device.Quest
 
             internal bool IsTouchedPrimary
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _isTouchedPrimary;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
                     if (value ^ _isTouchedPrimary)
@@ -387,7 +563,9 @@ namespace Edanoue.VR.Device.Quest
 
             internal bool IsPressedSecondary
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _isPressedSecondary;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
                     if (value ^ _isPressedSecondary)
@@ -400,7 +578,9 @@ namespace Edanoue.VR.Device.Quest
 
             internal bool IsTouchedSecondary
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _isTouchedSecondary;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
                     if (value ^ _isTouchedSecondary)
@@ -413,7 +593,9 @@ namespace Edanoue.VR.Device.Quest
 
             internal bool IsTouchedTrigger
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _isTouchedTrigger;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
                     if (value ^ _isTouchedTrigger)
@@ -426,10 +608,12 @@ namespace Edanoue.VR.Device.Quest
 
             internal float Trigger
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _trigger;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
-                    if (!(Math.Abs(value - _trigger) > InputTolerance))
+                    if (Math.Abs(value - _trigger) < _INPUT_TOLERANCE)
                     {
                         return;
                     }
@@ -441,7 +625,9 @@ namespace Edanoue.VR.Device.Quest
 
             internal bool IsTouchedGrip
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _isTouchedGrip;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
                     if (value ^ _isTouchedGrip)
@@ -454,10 +640,12 @@ namespace Edanoue.VR.Device.Quest
 
             internal float Grip
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _grip;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
-                    if (!(Math.Abs(value - _grip) > InputTolerance))
+                    if (!(Math.Abs(value - _grip) > _INPUT_TOLERANCE))
                     {
                         return;
                     }
@@ -469,7 +657,9 @@ namespace Edanoue.VR.Device.Quest
 
             internal bool IsPressedStick
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _isPressedStick;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
                     if (value ^ _isPressedStick)
@@ -482,7 +672,9 @@ namespace Edanoue.VR.Device.Quest
 
             internal bool IsTouchedStick
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _isTouchedStick;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
                     if (value ^ _isTouchedStick)
@@ -495,10 +687,13 @@ namespace Edanoue.VR.Device.Quest
 
             internal (float X, float Y) Stick
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => (_stickX, _stickY);
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
-                    if (Math.Abs(value.X - _stickX) > InputTolerance || Math.Abs(value.Y - _stickY) > InputTolerance)
+                    if (Math.Abs(value.X - _stickX) > _INPUT_TOLERANCE ||
+                        Math.Abs(value.Y - _stickY) > _INPUT_TOLERANCE)
                     {
                         _stickX = value.X;
                         _stickY = value.Y;
@@ -509,7 +704,9 @@ namespace Edanoue.VR.Device.Quest
 
             internal bool IsTouchedThumbRest
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _isTouchedThumbRest;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
                     if (value ^ _isTouchedThumbRest)
@@ -522,7 +719,9 @@ namespace Edanoue.VR.Device.Quest
 
             internal bool IsPressedStart
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _isPressedStart;
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
                     if (value ^ _isPressedStart)

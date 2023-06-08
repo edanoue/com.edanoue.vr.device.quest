@@ -8,10 +8,33 @@ using UnityEngine.Device;
 
 namespace Edanoue.VR.Device.Quest
 {
+    internal sealed class QuestHeadsetDisplayColorHandler : HeadsetDisplayColorHandler
+    {
+        public override void SetColorScale(float x, float y, float z, float w)
+        {
+            OculusXRPlugin.SetColorScale(x, y, z, w);
+        }
+
+        public override void SetColorOffset(float x, float y, float z, float w)
+        {
+            OculusXRPlugin.SetColorOffset(x, y, z, w);
+        }
+
+        public override void ResetColorScale()
+        {
+            OculusXRPlugin.SetColorScale(1, 1, 1, 1);
+        }
+
+        public override void ResetColorOffset()
+        {
+            OculusXRPlugin.SetColorOffset(0, 0, 0, 0);
+        }
+    }
+
     /// <summary>
-    ///     Meta Quest 2 の Headset の実装
+    /// Meta Quest 2 の Headset の実装
     /// </summary>
-    public class OvrHeadsetQuest2 : IHeadset, ISupportedBattery, IUpdatable
+    public class OvrHeadsetQuest2 : IHeadset, ISupportedBattery
     {
         private Action? _establishedConnectionDelegate;
 
@@ -57,6 +80,16 @@ namespace Edanoue.VR.Device.Quest
 
         bool IHeadset.IsMounted => _isMounted;
 
+        FoveatedRenderingLevel IHeadset.FoveatedRenderingLevel
+        {
+            get
+            {
+                OvrpApi.ovrp_GetTiledMultiResLevel(out var level);
+                return (FoveatedRenderingLevel)level;
+            }
+            set => OvrpApi.ovrp_SetTiledMultiResLevel((OVRPlugin.FoveatedRenderingLevel)value);
+        }
+
         event Action? IHeadset.Mounted
         {
             add => _mountedDelegate += value;
@@ -69,12 +102,13 @@ namespace Edanoue.VR.Device.Quest
             remove => _unmountedDelegate -= value;
         }
 
+        public HeadsetDisplayColorHandler DisplayColor { get; } = new QuestHeadsetDisplayColorHandler();
 
         float ISupportedBattery.Battery =>
             // Use Unity methods (range: [0, 1])
             SystemInfo.batteryLevel;
 
-        void IUpdatable.Update(float deltaTime)
+        internal void Update()
         {
             var tmpBool = false;
 
@@ -119,7 +153,7 @@ namespace Edanoue.VR.Device.Quest
             // --------------------------------------
             if (OVRManager.loadedXRDevice == OVRManager.XRDevice.Oculus)
             {
-                var ovrNodeId = OVRPlugin.Node.EyeCenter;
+                const OVRPlugin.Node ovrNodeId = OVRPlugin.Node.EyeCenter;
                 // version >= OVRP_1_12_0
                 _pose = OvrpApi.ovrp_GetNodePoseState(OVRPlugin.Step.Render, ovrNodeId).Pose.ToOVRPose();
             }

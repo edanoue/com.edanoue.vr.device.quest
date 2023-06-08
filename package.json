@@ -1,12 +1,12 @@
 {
   "name": "com.edanoue.vr.device.quest",
   "displayName": "Edanoue VR Device Quest",
-  "version": "0.1.4",
-  "unity": "2021.3",
+  "version": "0.1.5",
+  "unity": "2022.2",
   "description": "Meta vr device",
   "dependencies": {
-    "com.edanoue.vr.device.core": "0.1.3",
-    "com.meta.xr.sdk.utilities": "47.0.0-preview"
+    "com.edanoue.vr.device.core": "0.1.5",
+    "com.meta.xr.sdk.utilities": "50.0.0-preview"
   },
   "author": {
     "name": "Edanoue, Inc.",

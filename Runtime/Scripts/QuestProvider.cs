@@ -8,10 +8,10 @@ using UnityEngine;
 namespace Edanoue.VR.Device.Quest
 {
     /// <summary>
-    ///     Quest device provider class.
-    ///     Currently use OVR (OVRP) Plugin.
+    /// Quest device provider class.
+    /// Currently use OVR (OVRP) Plugin.
     /// </summary>
-    public class QuestProvider : IProvider, IUpdatable
+    public class QuestProvider : IProvider
     {
         private readonly OvrHeadsetQuest2        _headset;
         private readonly OvrControllerQuestTouch _leftController;
@@ -70,7 +70,7 @@ namespace Edanoue.VR.Device.Quest
         IController IProvider.LeftController => _leftController;
         IController IProvider.RightController => _rightController;
 
-        float[] IProvider.AvailableRefreshRates => OVRManager.display.displayFrequenciesAvailable;
+        float[] IProvider.AvailableRefreshRates => OVRPlugin.systemDisplayFrequenciesAvailable;
 
         float IProvider.RefreshRate
         {
@@ -92,7 +92,7 @@ namespace Edanoue.VR.Device.Quest
             remove => _applicationFocusLostDelegate -= value;
         }
 
-        void IUpdatable.Update(float deltaTime)
+        void IProvider.Update(float deltaTime)
         {
             // Headset focus check
             var tmpBool = OVRPlugin.hasInputFocus;
@@ -108,14 +108,19 @@ namespace Edanoue.VR.Device.Quest
                     _applicationFocusLostDelegate?.Invoke();
                 }
             }
+
+            // Update Devices
+            _headset.Update();
+            _leftController.Update();
+            _rightController.Update();
         }
 
         /// <summary>
-        ///     Meta Quest 2 を使用している場合のコントローラーのセットアップ
-        ///     Note: 2022-11 現在 Meta Quest 2 は以下のコントローラーに対応しています
-        ///     - Oculus Quest Touch Controller
-        ///     - Meta Quest Pro Touch Controller
-        ///     Note: 2022-11 現在 InteractionProfile は Standalone じゃないと取得できません
+        /// Meta Quest 2 を使用している場合のコントローラーのセットアップ
+        /// Note: 2022-11 現在 Meta Quest 2 は以下のコントローラーに対応しています
+        /// - Oculus Quest Touch Controller
+        /// - Meta Quest Pro Touch Controller
+        /// Note: 2022-11 現在 InteractionProfile は Standalone じゃないと取得できません
         /// </summary>
         /// <exception cref="NotImplementedException"></exception>
         private static void SetupQuest2Controller(out OvrControllerQuestTouch leftController,
