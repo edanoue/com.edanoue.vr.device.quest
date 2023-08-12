@@ -74,6 +74,8 @@ namespace Edanoue.VR.Device.Quest
             }
         }
 
+        public virtual ControllerDeviceType DeviceType => ControllerDeviceType.META_QUEST_TOUCH;
+        
         ControllerDomain IController.Domain => _controllerDomain;
         bool IController.IsPressedPrimary => _inputCache.IsPressedPrimary;
         bool IController.IsTouchedPrimary => _inputCache.IsTouchedPrimary;

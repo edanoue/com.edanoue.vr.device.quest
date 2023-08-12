@@ -90,6 +90,16 @@ namespace Edanoue.VR.Device.Quest
             set => OvrpApi.ovrp_SetTiledMultiResLevel((OVRPlugin.FoveatedRenderingLevel)value);
         }
 
+        bool IHeadset.UseDynamicFoveatedRendering
+        {
+            get
+            {
+                OvrpApi.ovrp_GetTiledMultiResDynamic(out var isDynamic);
+                return isDynamic != OvrpApi.Bool.False;
+            }
+            set => OvrpApi.ovrp_SetTiledMultiResDynamic(value ? OvrpApi.Bool.True : OvrpApi.Bool.False);
+        }
+
         event Action? IHeadset.Mounted
         {
             add => _mountedDelegate += value;
