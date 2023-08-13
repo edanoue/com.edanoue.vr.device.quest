@@ -120,12 +120,11 @@ namespace Edanoue.VR.Device.Quest
 
         internal void Update()
         {
-            var tmpBool = false;
-
             // -----------------
             // Connection check
             // -----------------
-            tmpBool = OVRPlugin.hmdPresent;
+            
+            var tmpBool = OVRPlugin.hmdPresent;
             if (_isConnected != tmpBool)
             {
                 _isConnected = tmpBool;
@@ -159,9 +158,9 @@ namespace Edanoue.VR.Device.Quest
             // Cache pose (position and rotation)
             // Use OVRP method
             // Ref: OVRCommon.GetNodeStatePropertyVector3 (NodeStatePropertyType: Position)
-            // Ref: https://scrapbox.io/edanoue/Oculus_Integration_における_XrApi_と_XrDevice_の違い
+            // Ref: https://scrapbox.io/edanoue/Oculus_Integration_%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8B_XrApi_%E3%81%A8_XrDevice_%E3%81%AE%E9%81%95%E3%81%84
             // --------------------------------------
-            if (OVRManager.loadedXRDevice == OVRManager.XRDevice.Oculus)
+            if (OVRPlugin.initialized)
             {
                 const OVRPlugin.Node ovrNodeId = OVRPlugin.Node.EyeCenter;
                 // version >= OVRP_1_12_0
