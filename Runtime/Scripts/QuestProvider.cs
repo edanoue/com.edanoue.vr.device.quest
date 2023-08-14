@@ -13,9 +13,10 @@ namespace Edanoue.VR.Device.Quest
     /// </summary>
     public class QuestProvider : IProvider
     {
-        private readonly OvrHeadsetQuest2        _headset;
-        private readonly OvrControllerQuestTouch _leftController;
-        private readonly OvrControllerQuestTouch _rightController;
+        private readonly OvrHeadsetQuest2         _headset;
+        private readonly OvrControllerQuestTouch  _leftController;
+        private readonly EdaLightWeightOvrManager _manager;
+        private readonly OvrControllerQuestTouch  _rightController;
 
         private Action? _applicationFocusAcquiredDelegate;
         private Action? _applicationFocusLostDelegate;
@@ -36,6 +37,9 @@ namespace Edanoue.VR.Device.Quest
                 Debug.LogAssertion("Can not find available headset with OVR.");
                 throw new ApplicationException("Can not find available headset with OVR.");
             }
+
+            // Manager を作成する
+            _manager = new EdaLightWeightOvrManager();
 
             // Standalone の Meta Quest 2 の場合
             if (headsetType == OVRPlugin.SystemHeadset.Oculus_Quest_2)
@@ -94,6 +98,9 @@ namespace Edanoue.VR.Device.Quest
 
         void IProvider.Update(float deltaTime)
         {
+            // Update manager
+            _manager.Update();
+
             // Headset focus check
             var tmpBool = OVRPlugin.hasInputFocus;
             if (_hasApplicationFocus != tmpBool)
