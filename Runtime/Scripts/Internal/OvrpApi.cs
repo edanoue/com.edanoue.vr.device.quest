@@ -2,6 +2,7 @@
 
 #nullable enable
 using System.Runtime.InteropServices;
+
 // ReSharper disable InconsistentNaming
 
 namespace Edanoue.VR.Device.Quest.Internal
@@ -13,12 +14,28 @@ namespace Edanoue.VR.Device.Quest.Internal
     {
         private const string _PLUGIN_NAME = "OVRPlugin";
 
+
+        #region OVRP 1.29.0
+
+        /// <summary>
+        /// </summary>
+        /// <param name="stepId"></param>
+        /// <param name="nodeId"></param>
+        /// <returns></returns>
+        [DllImport(_PLUGIN_NAME, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern OVRPlugin.PoseStatef ovrp_GetNodePoseState(
+            OVRPlugin.Step stepId,
+            OVRPlugin.Node nodeId
+        );
+
+        #endregion
+
         internal enum Bool
         {
             False = 0,
             True
         }
-        
+
         internal enum Result
         {
             /// Success
@@ -45,24 +62,8 @@ namespace Edanoue.VR.Device.Quest.Internal
             Failure_SpaceMappingInsufficient  = -2001,
             Failure_SpaceLocalizationFailed   = -2002,
             Failure_SpaceNetworkTimeout       = -2003,
-            Failure_SpaceNetworkRequestFailed = -2004,
+            Failure_SpaceNetworkRequestFailed = -2004
         }
-
-
-        #region OVRP 1.29.0
-
-        /// <summary>
-        /// </summary>
-        /// <param name="stepId"></param>
-        /// <param name="nodeId"></param>
-        /// <returns></returns>
-        [DllImport(_PLUGIN_NAME, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern OVRPlugin.PoseStatef ovrp_GetNodePoseState(
-            OVRPlugin.Step stepId,
-            OVRPlugin.Node nodeId
-        );
-
-        #endregion
 
         #region OVRP 1.21.0
 
@@ -82,15 +83,15 @@ namespace Edanoue.VR.Device.Quest.Internal
         internal static extern Result ovrp_SetTiledMultiResLevel(OVRPlugin.FoveatedRenderingLevel level);
 
         #endregion
-        
+
         #region OVRP 1.46.0
 
         [DllImport(_PLUGIN_NAME, CallingConvention = CallingConvention.Cdecl)]
         internal static extern Result ovrp_GetTiledMultiResDynamic(out Bool isDynamic);
-        
+
         [DllImport(_PLUGIN_NAME, CallingConvention = CallingConvention.Cdecl)]
         internal static extern Result ovrp_SetTiledMultiResDynamic(Bool isDynamic);
-        
+
         #endregion
 
         #region OVRP 1.78.0

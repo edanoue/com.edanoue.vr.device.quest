@@ -20,7 +20,7 @@ namespace Edanoue.VR.Device.Quest
         internal OvrControllerQuestProTouch(ControllerDomain controllerDomain) : base(controllerDomain)
         {
         }
-        
+
         public override ControllerDeviceType DeviceType => ControllerDeviceType.META_QUEST_PRO_TOUCH;
 
         void ISupportedThumbRestVibration.SetVibration(float frequency, float amplitude)

@@ -123,7 +123,7 @@ namespace Edanoue.VR.Device.Quest
             // -----------------
             // Connection check
             // -----------------
-            
+
             var tmpBool = OVRPlugin.hmdPresent;
             if (_isConnected != tmpBool)
             {
