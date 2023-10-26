@@ -48,6 +48,14 @@ namespace Edanoue.VR.Device.Quest
                 SetupQuest2Controller(out _leftController, out _rightController);
             }
 
+            // Standalone の Meta Quest 3 の場合
+            else if (headsetType == OVRPlugin.SystemHeadset.Meta_Quest_3)
+            {
+                // ToDo: (南) 実機無いため, 暫定的に Quest 2 のもので初期化しています
+                _headset = new OvrHeadsetQuest2();
+                SetupQuest2Controller(out _leftController, out _rightController);
+            }
+
             // Oculus Link 経由の Meta Quest 2
             // 南: 本来はビルド対象ではないですが, 開発中に使用することがあるので
             else if (headsetType == OVRPlugin.SystemHeadset.Oculus_Link_Quest_2)
@@ -143,6 +151,11 @@ namespace Edanoue.VR.Device.Quest
 
                     // Meta Quest Pro Touch Controller
                     OVRPlugin.InteractionProfile.TouchPro => new OvrControllerQuestProTouch(ControllerDomain.Left),
+
+                    // Quest 3 Controller ToDo: (南) 実機で未検証 / 専用のクラス作成していません
+                    OVRPlugin.InteractionProfile.TouchPlus => new OvrControllerQuestTouch(ControllerDomain.Left),
+
+                    // Invalid controller
                     OVRPlugin.InteractionProfile.None => throw new NotImplementedException(),
                     _ => throw new NotImplementedException()
                 };
@@ -160,6 +173,11 @@ namespace Edanoue.VR.Device.Quest
 
                     // Meta Quest Pro Touch Controller
                     OVRPlugin.InteractionProfile.TouchPro => new OvrControllerQuestProTouch(ControllerDomain.Right),
+
+                    // Quest 3 Controller ToDo: (南) 実機で未検証 / 専用のクラス作成していません
+                    OVRPlugin.InteractionProfile.TouchPlus => new OvrControllerQuestTouch(ControllerDomain.Right),
+
+                    // Invalid controller
                     OVRPlugin.InteractionProfile.None => throw new NotImplementedException(),
                     _ => throw new NotImplementedException()
                 };
